@@ -1,0 +1,41 @@
+[package]
+name = "esp32s3-parquet-test"
+version = "0.1.0"
+edition = "2021"
+resolver = "2"
+rust-version = "1.83"
+
+[[bin]]
+name = "esp32s3-parquet-test"
+harness = false
+
+[profile.release]
+opt-level = "s"
+lto = true
+
+[profile.dev]
+debug = true
+opt-level = "z"
+
+[dependencies]
+# Logging
+log = { version = "0.4", default-features = false }
+
+# ESP-IDF services (WiFi, HTTP, etc.) - latest stable
+esp-idf-svc = { version = "0.51", default-features = false, features = ["std", "binstart"] }
+
+# Error handling
+anyhow = "1"
+
+# Embedded service traits
+embedded-svc = "0.28"
+
+# Minimal Parquet - no arrow, with Snappy compression (pure Rust)
+# Using 56.x for latest stable with snap feature
+parquet = { version = "56", default-features = false, features = ["snap"] }
+
+# Sans-IO S3 client - you bring your own HTTP client
+rusty-s3 = "0.8"
+
+[build-dependencies]
+embuild = "0.33"
