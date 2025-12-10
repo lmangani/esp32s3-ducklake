@@ -4,11 +4,11 @@
 
 **Native Parquet on ESP32-S3 is PROVEN FEASIBLE!**
 
-| Configuration | Binary Size | Partition Used | Status |
-|--------------|-------------|----------------|--------|
-| Uncompressed | 989 KB | 24.52% | ✅ Works |
-| **Snappy (pure Rust)** | **997 KB** | **24.73%** | ✅ Recommended |
-| ZSTD (C library) | N/A | N/A | ❌ Cross-compile fails |
+| Configuration          | Binary Size | Partition Used | Status                 |
+| ---------------------- | ----------- | -------------- | ---------------------- |
+| Uncompressed           | 989 KB      | 24.52%         | ✅ Works               |
+| **Snappy (pure Rust)** | **997 KB**  | **24.73%**     | ✅ Recommended         |
+| ZSTD (C library)       | N/A         | N/A            | ❌ Cross-compile fails |
 
 ---
 
@@ -22,13 +22,13 @@
 parquet = { version = "57.1.0", default-features = false, features = ["snap"] }
 ```
 
-| Property | Value |
-|----------|-------|
-| Pure Rust | ✅ Yes |
-| C dependencies | None |
-| Binary size impact | +8 KB |
-| Compression ratio | Good (~99% of raw for sensor data) |
-| Maintainer | BurntSushi |
+| Property           | Value                              |
+| ------------------ | ---------------------------------- |
+| Pure Rust          | ✅ Yes                             |
+| C dependencies     | None                               |
+| Binary size impact | +8 KB                              |
+| Compression ratio  | Good (~99% of raw for sensor data) |
+| Maintainer         | BurntSushi                         |
 
 #### Uncompressed
 
@@ -52,17 +52,20 @@ parquet = { version = "57.1.0", default-features = false, features = ["zstd"] }
 ```
 
 **Error:**
+
 ```
 error: compiled for a big endian system and target is little endian
 error: cross-endian linking not supported
 ```
 
 **Why it fails:**
+
 ```
 parquet → zstd → zstd-safe → zstd-sys → cc (C compiler) → C zstd library
 ```
 
 The `zstd-sys` crate compiles the C zstd library using the host compiler, not the ESP32 cross-compiler. This results in:
+
 1. Wrong architecture (host vs Xtensa)
 2. Endianness mismatch (big-endian objects, little-endian target)
 3. Linker failure
@@ -73,12 +76,12 @@ The `zstd-sys` crate compiles the C zstd library using the host compiler, not th
 
 ## Pure Rust Compression Crates
 
-| Crate | Version | Pure Rust | no_std | Parquet Integration | Notes |
-|-------|---------|-----------|--------|---------------------|-------|
-| **snap** | 1.1.1 | ✅ | Uses std::io | ✅ `features = ["snap"]` | **Best choice** |
-| lz4_flex | 0.12.0 | ✅ | ✅ (block format) | ❌ Not supported | Fast, but parquet uses C lz4 |
-| ruzstd | 0.8.2 | ✅ | ✅ | ❌ Decoder only | Cannot compress, only decompress |
-| zstd-safe | 7.2.4 | ❌ | ❌ (needs C lib) | ✅ `features = ["zstd"]` | Cross-compile fails |
+| Crate     | Version | Pure Rust | no_std            | Parquet Integration      | Notes                            |
+| --------- | ------- | --------- | ----------------- | ------------------------ | -------------------------------- |
+| **snap**  | 1.1.1   | ✅        | Uses std::io      | ✅ `features = ["snap"]` | **Best choice**                  |
+| lz4_flex  | 0.12.0  | ✅        | ✅ (block format) | ❌ Not supported         | Fast, but parquet uses C lz4     |
+| ruzstd    | 0.8.2   | ✅        | ✅                | ❌ Decoder only          | Cannot compress, only decompress |
+| zstd-safe | 7.2.4   | ❌        | ❌ (needs C lib)  | ✅ `features = ["zstd"]` | Cross-compile fails              |
 
 ### ruzstd - Pure Rust ZSTD (Decoder Only)
 
@@ -104,14 +107,15 @@ The `zstd-sys` crate compiles the C zstd library using the host compiler, not th
 rusty-s3 = "0.8"
 ```
 
-| Property | Value |
-|----------|-------|
-| Approach | Sans-IO (you bring HTTP client) |
-| Pure Rust | ✅ Yes |
-| Dependencies | Minimal (HMAC, SHA2 for signing) |
-| Binary impact | ~250 KB |
+| Property      | Value                            |
+| ------------- | -------------------------------- |
+| Approach      | Sans-IO (you bring HTTP client)  |
+| Pure Rust     | ✅ Yes                           |
+| Dependencies  | Minimal (HMAC, SHA2 for signing) |
+| Binary impact | ~250 KB                          |
 
 **Why rusty-s3 is perfect for ESP32:**
+
 - No bundled HTTP client - use `esp-idf-svc` HTTP client
 - Only handles URL signing
 - Generates presigned PUT URLs for direct S3 upload
@@ -146,24 +150,24 @@ fn generate_presigned_url(bucket_name: &str, object_key: &str) -> String {
 
 ### ESP32-S3 Flash Budget
 
-| Component | Size |
-|-----------|------|
-| Total Flash | 16 MB |
-| App Partition | 4 MB (default) |
-| Parquet + S3 Binary | ~1 MB |
-| **Remaining** | ~3 MB |
+| Component           | Size           |
+| ------------------- | -------------- |
+| Total Flash         | 16 MB          |
+| App Partition       | 4 MB (default) |
+| Parquet + S3 Binary | ~1 MB          |
+| **Remaining**       | ~3 MB          |
 
 ### Breakdown by Component (Estimated)
 
-| Component | Size |
-|-----------|------|
-| ESP-IDF runtime | ~500 KB |
-| WiFi stack | ~150 KB |
-| TLS (mbedTLS) | ~100 KB |
-| Parquet crate | ~200 KB |
-| Snappy compression | ~8 KB |
-| rusty-s3 | ~50 KB |
-| Application code | ~10 KB |
+| Component          | Size    |
+| ------------------ | ------- |
+| ESP-IDF runtime    | ~500 KB |
+| WiFi stack         | ~150 KB |
+| TLS (mbedTLS)      | ~100 KB |
+| Parquet crate      | ~200 KB |
+| Snappy compression | ~8 KB   |
+| rusty-s3           | ~50 KB  |
+| Application code   | ~10 KB  |
 
 ---
 
@@ -184,14 +188,14 @@ CONFIG_ESP_MAIN_TASK_STACK_SIZE=32768
 
 ### Memory Usage for Parquet
 
-| Component | Memory Needed |
-|-----------|---------------|
-| Raw sensor data (178 × 14 × 4 bytes) | ~11 KB |
-| Column buffers | ~80 KB |
-| Snappy workspace | ~10 KB |
-| Metadata | ~10 KB |
-| **Total Peak Memory** | **~110 KB** |
-| **ESP32-S3 PSRAM Available** | **8,000 KB** |
+| Component                            | Memory Needed |
+| ------------------------------------ | ------------- |
+| Raw sensor data (178 × 14 × 4 bytes) | ~11 KB        |
+| Column buffers                       | ~80 KB        |
+| Snappy workspace                     | ~10 KB        |
+| Metadata                             | ~10 KB        |
+| **Total Peak Memory**                | **~110 KB**   |
+| **ESP32-S3 PSRAM Available**         | **8,000 KB**  |
 
 **Conclusion:** Memory is NOT a bottleneck with 8MB PSRAM.
 
@@ -250,12 +254,12 @@ embuild = "0.33"
 
 ### Tested Configurations
 
-| Test | Result |
-|------|--------|
-| Build for ESP32-S3 | ✅ Compiles |
-| Binary size | ✅ 997 KB (24.73% of partition) |
-| Snappy compression | ✅ Works |
-| S3 URL signing | ✅ Works |
+| Test               | Result                          |
+| ------------------ | ------------------------------- |
+| Build for ESP32-S3 | ✅ Compiles                     |
+| Binary size        | ✅ 997 KB (24.73% of partition) |
+| Snappy compression | ✅ Works                        |
+| S3 URL signing     | ✅ Works                        |
 
 ---
 
@@ -285,19 +289,23 @@ embuild = "0.33"
 ## Resources
 
 ### Official Documentation
+
 - [ESP-RS Book](https://docs.esp-rs.org/book/)
 - [esp-idf-svc Documentation](https://docs.esp-rs.org/esp-idf-svc/)
 - [Parquet crate docs](https://docs.rs/parquet/latest/parquet/)
 
 ### Pure Rust Compression
+
 - [snap (Snappy)](https://github.com/BurntSushi/rust-snappy) - Pure Rust Snappy
 - [lz4_flex](https://github.com/PSeitz/lz4_flex) - Pure Rust LZ4
 - [ruzstd](https://github.com/KillingSpark/zstd-rs) - Pure Rust ZSTD decoder
 
 ### S3 Clients
+
 - [rusty-s3](https://crates.io/crates/rusty-s3) - Sans-IO S3 client
 
 ### Cross-Compilation Issues
+
 - [Cross compile issue on zstd](https://users.rust-lang.org/t/cross-compile-issue-on-zstd/104721)
 - [Compression for embedded/no_std](https://users.rust-lang.org/t/compression-for-embedded-no-std/68839)
 
@@ -314,6 +322,6 @@ embuild = "0.33"
 
 ---
 
-*Last Updated: December 2024*
-*Tested on: ESP32-S3 with 16MB Flash, 8MB PSRAM*
-*Rust Toolchain: 1.91.1 (ESP)*
+_Last Updated: December 2025_
+_Tested on: ESP32-S3 with 16MB Flash, 8MB PSRAM_
+_Rust Toolchain: 1.91.1 (ESP)_

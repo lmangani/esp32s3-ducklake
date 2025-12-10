@@ -21,19 +21,20 @@ flowchart LR
     style PARQUET fill:#90EE90
 ```
 
-### POC Results (December 2024)
+### POC Results (December 2025)
+
 - **parquet-rs v57.1.0** compiles and works
 - **ZSTD compression**: 10.1 KB output (91% of raw)
 - **rusty-s3**: Sans-IO S3 client for presigned URLs
 - **Binary size**: 1.1 MB with S3 (macOS), ~2-3 MB estimated for ESP32
 - **Memory**: ~150 KB peak (fits in 8MB PSRAM easily!)
 
-| Rank | Module | Best For |
-|------|--------|----------|
-| 1 | **ESP32-S3** | Native Parquet + ZSTD + 8MB PSRAM |
-| 2 | **ESP32-C6** | WiFi 6 + standard RISC-V toolchain |
-| 3 | **ESP32-C61** | Future-proof (WiFi 6 + PSRAM) - limited availability |
-| 4 | **ESP32-P4** | Maximum power - requires external WiFi chip |
+| Rank | Module        | Best For                                             |
+| ---- | ------------- | ---------------------------------------------------- |
+| 1    | **ESP32-S3**  | Native Parquet + ZSTD + 8MB PSRAM                    |
+| 2    | **ESP32-C6**  | WiFi 6 + standard RISC-V toolchain                   |
+| 3    | **ESP32-C61** | Future-proof (WiFi 6 + PSRAM) - limited availability |
+| 4    | **ESP32-P4**  | Maximum power - requires external WiFi chip          |
 
 ---
 
@@ -57,24 +58,26 @@ graph TD
     BT --> RUST
 ```
 
-| Specification | Value |
-|---------------|-------|
-| **Architecture** | Dual-core Xtensa LX7 @ 240 MHz |
-| **On-chip SRAM** | 512 KB |
-| **External PSRAM** | Up to 16MB (Octal SPI) |
-| **Flash Options** | 8MB / 16MB / 32MB |
-| **WiFi** | 802.11 b/g/n (2.4 GHz) |
-| **Bluetooth** | BLE 5.0 |
-| **GPIO** | 45 programmable pins |
-| **USB** | USB 2.0 OTG full-speed |
-| **Performance** | 1329 CoreMark |
+| Specification      | Value                          |
+| ------------------ | ------------------------------ |
+| **Architecture**   | Dual-core Xtensa LX7 @ 240 MHz |
+| **On-chip SRAM**   | 512 KB                         |
+| **External PSRAM** | Up to 16MB (Octal SPI)         |
+| **Flash Options**  | 8MB / 16MB / 32MB              |
+| **WiFi**           | 802.11 b/g/n (2.4 GHz)         |
+| **Bluetooth**      | BLE 5.0                        |
+| **GPIO**           | 45 programmable pins           |
+| **USB**            | USB 2.0 OTG full-speed         |
+| **Performance**    | 1329 CoreMark                  |
 
 **Key Features:**
+
 - AI acceleration with vector instructions
 - Camera (MIPI-CSI) and LCD support
 - Largest PSRAM capacity among WiFi-enabled variants
 
 **Rust Support:**
+
 - Fully supported by esp-hal 1.0 (stable)
 - Requires Xtensa fork of Rust compiler
 - Both `no_std` and `std` (ESP-IDF) approaches available
@@ -82,12 +85,12 @@ graph TD
 
 **Recommended Development Boards:**
 
-| Board | Flash | PSRAM | Price Range |
-|-------|-------|-------|-------------|
-| Waveshare ESP32-S3-DEV-KIT-N16R8 | 16MB | 8MB | ~$15 |
-| Adafruit Metro ESP32-S3 | 16MB | 8MB | ~$25 |
-| LILYGO T7-S3 | 16MB | 8MB | ~$12 |
-| Unexpected Maker TinyS3 | 8MB | 8MB | ~$22 |
+| Board                            | Flash | PSRAM | Price Range |
+| -------------------------------- | ----- | ----- | ----------- |
+| Waveshare ESP32-S3-DEV-KIT-N16R8 | 16MB  | 8MB   | ~$15        |
+| Adafruit Metro ESP32-S3          | 16MB  | 8MB   | ~$25        |
+| LILYGO T7-S3                     | 16MB  | 8MB   | ~$12        |
+| Unexpected Maker TinyS3          | 8MB   | 8MB   | ~$22        |
 
 ---
 
@@ -109,41 +112,44 @@ graph TD
     BT --> RUST
 ```
 
-| Specification | Value |
-|---------------|-------|
-| **Architecture** | Single-core RISC-V @ 160 MHz |
-| **Low-Power Core** | RISC-V @ 20 MHz |
-| **On-chip SRAM** | 512 KB |
-| **External PSRAM** | **Not supported** |
-| **Flash** | 8MB (typical) |
-| **WiFi** | 802.11ax (WiFi 6) - 2.4 GHz only |
-| **Bluetooth** | BLE 5.3 |
-| **802.15.4** | Thread / Zigbee / Matter |
-| **GPIO** | 22-30 programmable pins |
-| **Performance** | 496 CoreMark |
+| Specification      | Value                            |
+| ------------------ | -------------------------------- |
+| **Architecture**   | Single-core RISC-V @ 160 MHz     |
+| **Low-Power Core** | RISC-V @ 20 MHz                  |
+| **On-chip SRAM**   | 512 KB                           |
+| **External PSRAM** | **Not supported**                |
+| **Flash**          | 8MB (typical)                    |
+| **WiFi**           | 802.11ax (WiFi 6) - 2.4 GHz only |
+| **Bluetooth**      | BLE 5.3                          |
+| **802.15.4**       | Thread / Zigbee / Matter         |
+| **GPIO**           | 22-30 programmable pins          |
+| **Performance**    | 496 CoreMark                     |
 
 **Key Features:**
+
 - First ESP32 with WiFi 6
 - Thread and Zigbee support (Matter-ready)
 - 2x TWAI (CAN) controllers
 - USB Serial/JTAG controller
 
 **Rust Support:**
+
 - Fully supported by esp-hal 1.0 (stable)
 - **Standard RISC-V toolchain** (no fork needed!)
 - Full `std` library support via ESP-IDF
 - Async/await with Embassy executor
 
 **Critical Limitation:**
+
 > No PSRAM support means only 512KB SRAM available. This significantly limits data buffering capacity for your S3 upload use case.
 
 **Recommended Development Boards:**
 
-| Board | Flash | Notes |
-|-------|-------|-------|
-| ESP32-C6-DevKitC-1 | 8MB | Official Espressif board |
-| ESP32-C6 Super Mini | 4MB | Compact form factor |
-| FireBeetle 2 ESP32-C6 | 8MB | DFRobot ecosystem |
+| Board                 | Flash | Notes                    |
+| --------------------- | ----- | ------------------------ |
+| ESP32-C6-DevKitC-1    | 8MB   | Official Espressif board |
+| ESP32-C6 Super Mini   | 4MB   | Compact form factor      |
+| FireBeetle 2 ESP32-C6 | 8MB   | DFRobot ecosystem        |
 
 ---
 
@@ -165,21 +171,23 @@ graph TD
     BT --> RUST
 ```
 
-| Specification | Value |
-|---------------|-------|
-| **Architecture** | Single-core RISC-V @ 160 MHz |
-| **On-chip SRAM** | 320 KB (less than C6) |
-| **External PSRAM** | Supported (Quad SPI @ 120 MHz) |
-| **WiFi** | 802.11ax (WiFi 6) - optimized for 20 MHz |
-| **Bluetooth** | BLE 5.0 with long-range |
-| **Security** | TEE, Secure boot, Flash/PSRAM encryption |
+| Specification      | Value                                    |
+| ------------------ | ---------------------------------------- |
+| **Architecture**   | Single-core RISC-V @ 160 MHz             |
+| **On-chip SRAM**   | 320 KB (less than C6)                    |
+| **External PSRAM** | Supported (Quad SPI @ 120 MHz)           |
+| **WiFi**           | 802.11ax (WiFi 6) - optimized for 20 MHz |
+| **Bluetooth**      | BLE 5.0 with long-range                  |
+| **Security**       | TEE, Secure boot, Flash/PSRAM encryption |
 
 **Release Status:**
-- Announced: January 2024
+
+- Announced: January 2025
 - Status: Development boards becoming available in 2025
 - Mass production timeline unclear
 
 **Why Wait for C61?**
+
 - Combines WiFi 6 (from C6) + PSRAM support (from S3)
 - Standard RISC-V toolchain
 - Cost-optimized
@@ -204,18 +212,18 @@ graph TD
     VIDEO --> RUST
 ```
 
-| Specification | Value |
-|---------------|-------|
-| **Architecture** | Dual-core RISC-V @ 400 MHz |
-| **Low-Power Core** | RISC-V @ 40 MHz |
-| **On-chip SRAM** | 768 KB |
-| **External PSRAM** | Up to 32MB |
+| Specification      | Value                              |
+| ------------------ | ---------------------------------- |
+| **Architecture**   | Dual-core RISC-V @ 400 MHz         |
+| **Low-Power Core** | RISC-V @ 40 MHz                    |
+| **On-chip SRAM**   | 768 KB                             |
+| **External PSRAM** | Up to 32MB                         |
 | **WiFi/Bluetooth** | **None** - requires companion chip |
-| **Video** | H.264 encoding 1080p@30fps |
-| **Display** | MIPI-DSI (up to 1080p) |
-| **Camera** | MIPI-CSI |
-| **USB** | USB 2.0 High-Speed OTG |
-| **GPIO** | 55 programmable pins |
+| **Video**          | H.264 encoding 1080p@30fps         |
+| **Display**        | MIPI-DSI (up to 1080p)             |
+| **Camera**         | MIPI-CSI                           |
+| **USB**            | USB 2.0 High-Speed OTG             |
+| **GPIO**           | 55 programmable pins               |
 
 **Use Case:** HMI, video doorbells, edge AI - **overkill for sensor data logging**
 
@@ -223,13 +231,13 @@ graph TD
 
 ### ESP32-H2 (Not Recommended for This Project)
 
-| Specification | Value |
-|---------------|-------|
+| Specification    | Value                       |
+| ---------------- | --------------------------- |
 | **Architecture** | Single-core RISC-V @ 96 MHz |
-| **SRAM** | 320 KB |
-| **WiFi** | **None** |
-| **Bluetooth** | BLE 5.0 |
-| **802.15.4** | Thread / Zigbee |
+| **SRAM**         | 320 KB                      |
+| **WiFi**         | **None**                    |
+| **Bluetooth**    | BLE 5.0                     |
+| **802.15.4**     | Thread / Zigbee             |
 
 **Not suitable:** No WiFi capability - cannot upload to S3 directly.
 
@@ -250,19 +258,19 @@ graph LR
     P4 --> S3 --> C6 --> C61 --> H2
 ```
 
-| Feature | ESP32-S3 | ESP32-C6 | ESP32-C61 | ESP32-P4 | ESP32-H2 |
-|---------|----------|----------|-----------|----------|----------|
-| **CPU** | 2x Xtensa 240MHz | 1x RISC-V 160MHz | 1x RISC-V 160MHz | 2x RISC-V 400MHz | 1x RISC-V 96MHz |
-| **SRAM** | 512 KB | 512 KB | 320 KB | 768 KB | 320 KB |
-| **PSRAM** | 16MB | None | Yes | 32MB | None |
-| **WiFi** | WiFi 4 | WiFi 6 | WiFi 6 | None | None |
-| **Bluetooth** | BLE 5.0 | BLE 5.3 | BLE 5.0 | None | BLE 5.0 |
-| **Thread/Zigbee** | No | Yes | No | No | Yes |
-| **Rust Toolchain** | Xtensa fork | Standard | Standard | Standard | Standard |
-| **esp-hal 1.0** | Stable | Stable | Coming | In dev | Stable |
-| **WiFi in Rust** | esp-radio | esp-radio | Expected | In progress | N/A |
-| **Availability** | Wide | Wide | Limited | Samples | Wide |
-| **For This Project** | **BEST** | Good | Future | Overkill | No WiFi |
+| Feature              | ESP32-S3         | ESP32-C6         | ESP32-C61        | ESP32-P4         | ESP32-H2        |
+| -------------------- | ---------------- | ---------------- | ---------------- | ---------------- | --------------- |
+| **CPU**              | 2x Xtensa 240MHz | 1x RISC-V 160MHz | 1x RISC-V 160MHz | 2x RISC-V 400MHz | 1x RISC-V 96MHz |
+| **SRAM**             | 512 KB           | 512 KB           | 320 KB           | 768 KB           | 320 KB          |
+| **PSRAM**            | 16MB             | None             | Yes              | 32MB             | None            |
+| **WiFi**             | WiFi 4           | WiFi 6           | WiFi 6           | None             | None            |
+| **Bluetooth**        | BLE 5.0          | BLE 5.3          | BLE 5.0          | None             | BLE 5.0         |
+| **Thread/Zigbee**    | No               | Yes              | No               | No               | Yes             |
+| **Rust Toolchain**   | Xtensa fork      | Standard         | Standard         | Standard         | Standard        |
+| **esp-hal 1.0**      | Stable           | Stable           | Coming           | In dev           | Stable          |
+| **WiFi in Rust**     | esp-radio        | esp-radio        | Expected         | In progress      | N/A             |
+| **Availability**     | Wide             | Wide             | Limited          | Samples          | Wide            |
+| **For This Project** | **BEST**         | Good             | Future           | Overkill         | No WiFi         |
 
 ---
 
@@ -331,14 +339,14 @@ flowchart TD
     USE_CASE[Your S3 Upload Project]
 ```
 
-| Aspect | no_std (Bare Metal) | std (ESP-IDF) |
-|--------|---------------------|---------------|
-| **Binary Size** | Smaller | Larger |
-| **Control** | Full hardware control | Higher-level abstractions |
-| **Networking** | esp-radio (experimental) | Mature ESP-IDF stack |
-| **Standard Library** | No Vec, String, etc. | Full std library |
-| **HTTP Client** | Manual implementation | esp-idf-svc::http |
-| **Recommended For** | Resource-constrained | **Your S3 project** |
+| Aspect               | no_std (Bare Metal)      | std (ESP-IDF)             |
+| -------------------- | ------------------------ | ------------------------- |
+| **Binary Size**      | Smaller                  | Larger                    |
+| **Control**          | Full hardware control    | Higher-level abstractions |
+| **Networking**       | esp-radio (experimental) | Mature ESP-IDF stack      |
+| **Standard Library** | No Vec, String, etc.     | Full std library          |
+| **HTTP Client**      | Manual implementation    | esp-idf-svc::http         |
+| **Recommended For**  | Resource-constrained     | **Your S3 project**       |
 
 ---
 
@@ -355,14 +363,14 @@ s3://us-west-2.opendata.source.coop/walkthru-earth/opensensor-space/enviroplus/
       data_2315.parquet  → 11.6 KB, 178 rows, 20 columns
 ```
 
-| Metric | Value |
-|--------|-------|
-| **File Size** | ~11.6 KB |
-| **Rows** | 178 (15 minutes @ 5 sec intervals) |
-| **Columns** | 20 sensor readings (floats) |
-| **Compression** | Snappy |
-| **Encoding** | PLAIN + RLE_DICTIONARY |
-| **Row Groups** | 1 |
+| Metric          | Value                              |
+| --------------- | ---------------------------------- |
+| **File Size**   | ~11.6 KB                           |
+| **Rows**        | 178 (15 minutes @ 5 sec intervals) |
+| **Columns**     | 20 sensor readings (floats)        |
+| **Compression** | Snappy                             |
+| **Encoding**    | PLAIN + RLE_DICTIONARY             |
+| **Row Groups**  | 1                                  |
 
 This is **MUCH smaller** than typical Parquet use cases!
 
@@ -396,31 +404,31 @@ graph TD
 
 #### parquet-rs (arrow-rs ecosystem)
 
-| Aspect | Status | Details |
-|--------|--------|---------|
-| **no_std support** | None | Requires heap allocation, Vec, HashMap, String |
-| **Dependencies** | Heavy | Thrift, compression libs (snappy, gzip, zstd) |
-| **Min row group** | ~5MB | Practical minimum for compression efficiency |
-| **Memory for write** | ~2x row group | Buffering required before flush |
+| Aspect               | Status        | Details                                        |
+| -------------------- | ------------- | ---------------------------------------------- |
+| **no_std support**   | None          | Requires heap allocation, Vec, HashMap, String |
+| **Dependencies**     | Heavy         | Thrift, compression libs (snappy, gzip, zstd)  |
+| **Min row group**    | ~5MB          | Practical minimum for compression efficiency   |
+| **Memory for write** | ~2x row group | Buffering required before flush                |
 
 **Verdict:** Cannot run on ESP32
 
 #### arrow-rs
 
-| Aspect | Status | Details |
-|--------|--------|---------|
-| **no_std support** | None | Designed for in-memory columnar processing |
-| **Memory** | High | Requires megabytes of RAM |
+| Aspect             | Status | Details                                    |
+| ------------------ | ------ | ------------------------------------------ |
+| **no_std support** | None   | Designed for in-memory columnar processing |
+| **Memory**         | High   | Requires megabytes of RAM                  |
 
 **Verdict:** Cannot run on ESP32
 
 #### Arrow IPC / Feather V2
 
-| Aspect | Status | Details |
-|--------|--------|---------|
-| **Complexity** | Lower | No Thrift, simpler than Parquet |
-| **File size** | ~45% larger | Less compression than Parquet |
-| **Memory** | ~1-2MB min | Still requires batch buffering |
+| Aspect         | Status      | Details                         |
+| -------------- | ----------- | ------------------------------- |
+| **Complexity** | Lower       | No Thrift, simpler than Parquet |
+| **File size**  | ~45% larger | Less compression than Parquet   |
+| **Memory**     | ~1-2MB min  | Still requires batch buffering  |
 
 **Verdict:** Still too heavy, but closest option
 
@@ -467,6 +475,7 @@ graph TB
 ```
 
 **Minimum Memory Requirements:**
+
 - Row group buffer: **1-5 MB** (minimum practical size)
 - Thrift serialization: **~100-500 KB**
 - Compression workspace: **~100 KB - 1 MB**
@@ -478,17 +487,17 @@ graph TB
 
 #### Comparison Table
 
-| Format | Memory | no_std | Compression | ESP32 Suitable |
-|--------|--------|--------|-------------|----------------|
-| **Postcard** | ~1-5 KB | Yes | Good (binary) | **Best** |
-| **CBOR** | ~1-5 KB | Yes | Good (binary) | Excellent |
-| **MessagePack** | ~5-10 KB | Partial | Good (binary) | Good |
-| **Gorilla TSC** | ~1 KB | Yes | **12x** for time-series | **Best for sensors** |
-| **Sprintz** | **<1 KB** | Yes | Excellent | Purpose-built for IoT |
-| **Protocol Buffers** | ~10-20 KB | Partial | 3x smaller than JSON | Good |
-| **JSON** | ~10-20 KB | Partial | None | Large output |
-| **Arrow IPC** | ~1-2 MB | No | Moderate | Too heavy |
-| **Parquet** | ~5+ MB | No | Best | Impossible |
+| Format               | Memory    | no_std  | Compression             | ESP32 Suitable        |
+| -------------------- | --------- | ------- | ----------------------- | --------------------- |
+| **Postcard**         | ~1-5 KB   | Yes     | Good (binary)           | **Best**              |
+| **CBOR**             | ~1-5 KB   | Yes     | Good (binary)           | Excellent             |
+| **MessagePack**      | ~5-10 KB  | Partial | Good (binary)           | Good                  |
+| **Gorilla TSC**      | ~1 KB     | Yes     | **12x** for time-series | **Best for sensors**  |
+| **Sprintz**          | **<1 KB** | Yes     | Excellent               | Purpose-built for IoT |
+| **Protocol Buffers** | ~10-20 KB | Partial | 3x smaller than JSON    | Good                  |
+| **JSON**             | ~10-20 KB | Partial | None                    | Large output          |
+| **Arrow IPC**        | ~1-2 MB   | No      | Moderate                | Too heavy             |
+| **Parquet**          | ~5+ MB    | No      | Best                    | Impossible            |
 
 ---
 
@@ -518,6 +527,7 @@ fn serialize_readings(readings: &[SensorReading]) -> Vec<u8> {
 ```
 
 **Why Postcard:**
+
 - Designed specifically for `#![no_std]` microcontrollers
 - Stable wire format (v1.0+)
 - Extremely compact binary output
@@ -538,6 +548,7 @@ graph LR
 ```
 
 **Rust Crates:**
+
 - `tsz-rs` - Gorilla implementation
 - `gorilla-tsc` - Alternative implementation
 
@@ -566,12 +577,12 @@ let bytes = serde_cbor::to_vec(&data)?;
 
 ### Sprintz Algorithm (Purpose-Built for IoT)
 
-| Feature | Value |
-|---------|-------|
-| **Designed for** | IoT and resource-constrained devices |
-| **Memory required** | **<1 KB** |
-| **Latency** | Virtually zero |
-| **Best for** | Predictable time series, monotonic values |
+| Feature             | Value                                     |
+| ------------------- | ----------------------------------------- |
+| **Designed for**    | IoT and resource-constrained devices      |
+| **Memory required** | **<1 KB**                                 |
+| **Latency**         | Virtually zero                            |
+| **Best for**        | Predictable time series, monotonic values |
 
 **Perfect for:** Temperature, humidity, pressure sensors with regular intervals
 
@@ -581,7 +592,7 @@ let bytes = serde_cbor::to_vec(&data)?;
 
 We built and tested a POC using parquet-rs v57.1.0 on macOS ARM64, and the results are very promising for ESP32-S3.
 
-### POC Test Results (December 2024)
+### POC Test Results (December 2025)
 
 ```mermaid
 graph TD
@@ -601,24 +612,24 @@ graph TD
 
 ### Compression Comparison (Actual Test Data)
 
-| Compression | File Size | vs Raw | Binary Size (macOS ARM64) |
-|-------------|-----------|--------|---------------------------|
-| **ZSTD** | **10.1 KB** | **91%** | **849 KB** |
-| Snappy | 11.0 KB | 99% | 589 KB |
-| Uncompressed | 11.9 KB | 104% | 589 KB |
+| Compression  | File Size   | vs Raw  | Binary Size (macOS ARM64) |
+| ------------ | ----------- | ------- | ------------------------- |
+| **ZSTD**     | **10.1 KB** | **91%** | **849 KB**                |
+| Snappy       | 11.0 KB     | 99%     | 589 KB                    |
+| Uncompressed | 11.9 KB     | 104%    | 589 KB                    |
 
 **Winner: ZSTD** - Best compression ratio with reasonable binary size.
 
 ### Memory Analysis - Confirmed!
 
-| Component | Memory Needed |
-|-----------|---------------|
-| Raw sensor data (178 × 14 × 4 bytes) | ~11 KB |
-| Column buffers | ~80 KB |
-| ZSTD workspace | ~50 KB |
-| Metadata | ~10 KB |
-| **Total Peak Memory** | **~150 KB** |
-| **ESP32-S3 PSRAM Available** | **8,000 KB** |
+| Component                            | Memory Needed |
+| ------------------------------------ | ------------- |
+| Raw sensor data (178 × 14 × 4 bytes) | ~11 KB        |
+| Column buffers                       | ~80 KB        |
+| ZSTD workspace                       | ~50 KB        |
+| Metadata                             | ~10 KB        |
+| **Total Peak Memory**                | **~150 KB**   |
+| **ESP32-S3 PSRAM Available**         | **8,000 KB**  |
 
 **Conclusion: Memory is NOT a bottleneck - fits easily in PSRAM!**
 
@@ -630,7 +641,7 @@ graph TD
 [package]
 name = "parquet-size-test"
 version = "0.1.0"
-edition = "2024"
+edition = "2025"
 rust-version = "1.85"
 
 [dependencies]
@@ -651,17 +662,17 @@ strip = true
 
 ### Available Compression Features
 
-| Feature | Adds to Binary | Compression Ratio | Recommendation |
-|---------|----------------|-------------------|----------------|
-| `zstd` | +260 KB | **Best (91%)** | **Recommended** |
-| `snap` | +0 KB | Good (99%) | Fallback |
-| `lz4` | ~+50 KB | Moderate | Alternative |
-| `brotli` | ~+100 KB | Good | Web-focused |
-| `flate2` | ~+50 KB | Good (gzip) | Compatibility |
+| Feature  | Adds to Binary | Compression Ratio | Recommendation  |
+| -------- | -------------- | ----------------- | --------------- |
+| `zstd`   | +260 KB        | **Best (91%)**    | **Recommended** |
+| `snap`   | +0 KB          | Good (99%)        | Fallback        |
+| `lz4`    | ~+50 KB        | Moderate          | Alternative     |
+| `brotli` | ~+100 KB       | Good              | Web-focused     |
+| `flate2` | ~+50 KB        | Good (gzip)       | Compatibility   |
 
 ---
 
-### Working Parquet Writer Code (Rust 2024)
+### Working Parquet Writer Code (Rust 2025)
 
 ```rust
 use parquet::basic::{Compression, Encoding};
@@ -724,13 +735,14 @@ fn write_parquet_file(readings: &[SensorReading], filename: &str) -> Result<()> 
 
 ### Binary Size Analysis for ESP32
 
-| Platform | Binary Size (ZSTD) | Flash Budget | Fits? |
-|----------|-------------------|--------------|-------|
-| macOS ARM64 | 849 KB | N/A | N/A |
-| **ESP32-S3 (est.)** | **~1.5-2.5 MB** | **16 MB** | **YES** |
-| ESP32-C6 | ~1.5-2.5 MB | 8 MB | YES |
+| Platform            | Binary Size (ZSTD) | Flash Budget | Fits?   |
+| ------------------- | ------------------ | ------------ | ------- |
+| macOS ARM64         | 849 KB             | N/A          | N/A     |
+| **ESP32-S3 (est.)** | **~1.5-2.5 MB**    | **16 MB**    | **YES** |
+| ESP32-C6            | ~1.5-2.5 MB        | 8 MB         | YES     |
 
 **Note:** ESP32 binary will be larger due to:
+
 - ESP-IDF runtime (~500 KB)
 - WiFi stack (~150 KB)
 - TLS stack (~100 KB)
@@ -762,15 +774,16 @@ flowchart TD
 
 ### Comparison of Rust S3 Crates
 
-| Crate | Approach | Dependencies | ESP32 Suitable | Binary Impact |
-|-------|----------|--------------|----------------|---------------|
-| **[rusty-s3](https://github.com/paolobarbolini/rusty-s3)** | Sans-IO | Minimal (HMAC, SHA2) | **Best** | +250 KB |
-| [rust-s3](https://github.com/durch/rust-s3) | Full client | Tokio/attohttpc | Possible (sync) | +500 KB |
-| [aws-sdk-s3](https://crates.io/crates/aws-sdk-s3) | Official AWS | Heavy (Tokio, Hyper) | Too heavy | +2 MB |
+| Crate                                                      | Approach     | Dependencies         | ESP32 Suitable  | Binary Impact |
+| ---------------------------------------------------------- | ------------ | -------------------- | --------------- | ------------- |
+| **[rusty-s3](https://github.com/paolobarbolini/rusty-s3)** | Sans-IO      | Minimal (HMAC, SHA2) | **Best**        | +250 KB       |
+| [rust-s3](https://github.com/durch/rust-s3)                | Full client  | Tokio/attohttpc      | Possible (sync) | +500 KB       |
+| [aws-sdk-s3](https://crates.io/crates/aws-sdk-s3)          | Official AWS | Heavy (Tokio, Hyper) | Too heavy       | +2 MB         |
 
 ### Recommended: rusty-s3 (Sans-IO)
 
 **Why rusty-s3 is perfect for ESP32:**
+
 - **Sans-IO approach**: Only handles URL signing, you bring your own HTTP client
 - **Minimal dependencies**: Just HMAC-SHA256 for signing
 - **Works with any HTTP client**: Use esp-idf-svc on ESP32
@@ -1001,13 +1014,13 @@ writer.close()?;
 
 ### Recommended Data Formats for ESP32
 
-| Format | Pros | Cons | Best For |
-|--------|------|------|----------|
-| **Postcard** | Tiny, no_std, fast | Less common | **ESP32 primary choice** |
-| **CBOR** | Standard, no_std | Slightly larger | Interoperability needed |
-| **Gorilla+Postcard** | Best compression | More complex | High-frequency sensors |
-| **JSON** | Human-readable | Large, slow | Debugging only |
-| **CSV** | Simple | Very large | Legacy systems |
+| Format               | Pros               | Cons            | Best For                 |
+| -------------------- | ------------------ | --------------- | ------------------------ |
+| **Postcard**         | Tiny, no_std, fast | Less common     | **ESP32 primary choice** |
+| **CBOR**             | Standard, no_std   | Slightly larger | Interoperability needed  |
+| **Gorilla+Postcard** | Best compression   | More complex    | High-frequency sensors   |
+| **JSON**             | Human-readable     | Large, slow     | Debugging only           |
+| **CSV**              | Simple             | Very large      | Legacy systems           |
 
 ---
 
@@ -1100,14 +1113,14 @@ pie title ESP32-S3 Memory with 8MB PSRAM
 
 ### Memory Budget for S3 Upload
 
-| Component | Estimated Memory |
-|-----------|------------------|
-| WiFi stack | ~50-100 KB |
-| HTTP client | ~20-30 KB |
-| TLS (HTTPS) | ~40-60 KB |
-| Sensor data buffer | Variable |
-| Postcard/CBOR formatting | ~5-10 KB |
-| **Available for data** | **~300 KB SRAM + 8MB PSRAM** |
+| Component                | Estimated Memory             |
+| ------------------------ | ---------------------------- |
+| WiFi stack               | ~50-100 KB                   |
+| HTTP client              | ~20-30 KB                    |
+| TLS (HTTPS)              | ~40-60 KB                    |
+| Sensor data buffer       | Variable                     |
+| Postcard/CBOR formatting | ~5-10 KB                     |
+| **Available for data**   | **~300 KB SRAM + 8MB PSRAM** |
 
 ### ESP32-C6 Memory Constraints
 
@@ -1119,6 +1132,7 @@ pie title ESP32-C6 Memory - no PSRAM
 ```
 
 **With only 512KB and no PSRAM, you must:**
+
 - Upload data more frequently
 - Use compact binary formats (Postcard/CBOR)
 - Minimize buffering
@@ -1231,14 +1245,14 @@ flowchart TD
 
 ### Summary
 
-| If You Need... | Choose | Why |
-|----------------|--------|-----|
+| If You Need...                    | Choose               | Why                                   |
+| --------------------------------- | -------------------- | ------------------------------------- |
 | **Best overall for your project** | ESP32-S3 (8MB PSRAM) | Maximum memory, native Parquet works! |
-| **Standard Rust toolchain** | ESP32-C6 | No fork needed, 8MB flash sufficient |
-| **Future-proofing** | Wait for ESP32-C61 | WiFi 6 + PSRAM, best of both worlds |
-| **Maximum power** | ESP32-P4 + C6 | Only if you need video/AI processing |
+| **Standard Rust toolchain**       | ESP32-C6             | No fork needed, 8MB flash sufficient  |
+| **Future-proofing**               | Wait for ESP32-C61   | WiFi 6 + PSRAM, best of both worlds   |
+| **Maximum power**                 | ESP32-P4 + C6        | Only if you need video/AI processing  |
 
-### Key Takeaways (Updated December 2024)
+### Key Takeaways (Updated December 2025)
 
 1. **Native Parquet on ESP32 IS FEASIBLE!** - POC proven with parquet-rs v57.1.0
 2. **ZSTD compression recommended** - 91% of raw size, best ratio
@@ -1254,26 +1268,31 @@ flowchart TD
 ## Resources
 
 ### Official Documentation
+
 - [ESP-RS Book](https://docs.esp-rs.org/book/) - Comprehensive Rust on ESP guide
 - [esp-hal Documentation](https://docs.esp-rs.org/esp-hal/) - HAL API reference
 - [esp-idf-svc Documentation](https://docs.esp-rs.org/esp-idf-svc/) - std approach docs
 - [Embedded Rust Training](https://docs.esp-rs.org/no_std-training/) - no_std training
 
 ### Serialization Libraries
+
 - [Postcard](https://github.com/jamesmunns/postcard) - no_std binary serialization
 - [serde_cbor](https://github.com/pyfisch/cbor) - CBOR for Rust
 - [tsz-rs](https://github.com/jeromefroe/tsz-rs) - Gorilla time-series compression
 
 ### Parquet/Arrow (Server-Side)
+
 - [arrow-rs](https://github.com/apache/arrow-rs) - Rust Arrow/Parquet
 - [PyArrow](https://arrow.apache.org/docs/python/) - Python Arrow/Parquet
 
 ### Community
+
 - Matrix Chat: `#esp-rs:matrix.org`
 - GitHub: [esp-rs organization](https://github.com/esp-rs)
 - [awesome-esp-rust](https://github.com/esp-rs/awesome-esp-rust) - Curated resources
 
 ### Development Boards Database
+
 - [ESP Boards Comparison](https://www.espboards.dev/) - Comprehensive board database
 
 ---
@@ -1286,36 +1305,36 @@ Based on actual data from opensensor.space S3 bucket (station `019ab390-f291-7a3
 
 ### Measured Data
 
-| Metric | Value |
-|--------|-------|
-| **Avg Parquet File Size** | 12.89 KB |
-| **Upload Frequency** | Every 15 minutes |
-| **Files per Day** | 96 |
+| Metric                    | Value            |
+| ------------------------- | ---------------- |
+| **Avg Parquet File Size** | 12.89 KB         |
+| **Upload Frequency**      | Every 15 minutes |
+| **Files per Day**         | 96               |
 
 ### Data Volume Per Sensor
 
-| Period | Data Volume |
-|--------|-------------|
-| **Per Day** | 1.21 MB |
-| **Per Month** | 36.78 MB |
-| **Per Year** | 441 MB (0.43 GB) |
+| Period        | Data Volume      |
+| ------------- | ---------------- |
+| **Per Day**   | 1.21 MB          |
+| **Per Month** | 36.78 MB         |
+| **Per Year**  | 441 MB (0.43 GB) |
 
 ### AWS S3 Costs (us-west-2)
 
-| Cost Type | Monthly | Yearly |
-|-----------|---------|--------|
-| Storage | $0.001 | $0.06 |
-| PUT Requests (2,922/month) | $0.015 | $0.18 |
-| **Total** | **$0.02** | **$0.24** |
+| Cost Type                  | Monthly   | Yearly    |
+| -------------------------- | --------- | --------- |
+| Storage                    | $0.001    | $0.06     |
+| PUT Requests (2,922/month) | $0.015    | $0.18     |
+| **Total**                  | **$0.02** | **$0.24** |
 
 ### Scaling to Multiple Sensors
 
 | Sensors | Data/Month | Data/Year | Cost/Year |
-|---------|------------|-----------|-----------|
-| 1 | 37 MB | 441 MB | $0.24 |
-| 10 | 368 MB | 4.3 GB | $2.35 |
-| 100 | 3.6 GB | 43 GB | $23 |
-| 1000 | 36 GB | 431 GB | $235 |
+| ------- | ---------- | --------- | --------- |
+| 1       | 37 MB      | 441 MB    | $0.24     |
+| 10      | 368 MB     | 4.3 GB    | $2.35     |
+| 100     | 3.6 GB     | 43 GB     | $23       |
+| 1000    | 36 GB      | 431 GB    | $235      |
 
 ### ESP32 WiFi Feasibility
 
@@ -1354,26 +1373,27 @@ graph LR
 
 ### Detailed Comparison
 
-| Provider | SIM Cost | Monthly Fee | Data Cost | Coverage | Best For |
-|----------|----------|-------------|-----------|----------|----------|
-| **[1NCE](https://1nce.com/)** | **$10** | **$0** | **Included (500MB/10yr)** | 170+ countries | **Long-term low-data IoT** |
-| [Hologram](https://hologram.io/) | $3-5 | $1 (can pause) | $0.03/MB | 190+ countries | Flexible/variable usage |
-| [Soracom](https://soracom.io/) | $5 | $0 | $0.002/KB | US (AT&T/T-Mo/VZW) | High-volume US deployments |
+| Provider                         | SIM Cost | Monthly Fee    | Data Cost                 | Coverage           | Best For                   |
+| -------------------------------- | -------- | -------------- | ------------------------- | ------------------ | -------------------------- |
+| **[1NCE](https://1nce.com/)**    | **$10**  | **$0**         | **Included (500MB/10yr)** | 170+ countries     | **Long-term low-data IoT** |
+| [Hologram](https://hologram.io/) | $3-5     | $1 (can pause) | $0.03/MB                  | 190+ countries     | Flexible/variable usage    |
+| [Soracom](https://soracom.io/)   | $5       | $0             | $0.002/KB                 | US (AT&T/T-Mo/VZW) | High-volume US deployments |
 
 ### 1NCE (Recommended for opensensor.space)
 
 **Why 1NCE is perfect for your use case:**
 
-| Feature | Value |
-|---------|-------|
-| **Total Cost** | $10 one-time (covers 10 years!) |
-| **Data Included** | 500 MB over 10 years |
-| **Your Monthly Usage** | ~42 MB per sensor |
-| **Annual Usage** | ~441 MB per sensor |
-| **Coverage** | LTE-M/NB-IoT in 170+ countries |
-| **Networks (US)** | AT&T, T-Mobile |
+| Feature                | Value                           |
+| ---------------------- | ------------------------------- |
+| **Total Cost**         | $10 one-time (covers 10 years!) |
+| **Data Included**      | 500 MB over 10 years            |
+| **Your Monthly Usage** | ~42 MB per sensor               |
+| **Annual Usage**       | ~441 MB per sensor              |
+| **Coverage**           | LTE-M/NB-IoT in 170+ countries  |
+| **Networks (US)**      | AT&T, T-Mobile                  |
 
 **Calculation for your sensor:**
+
 - Annual data: 441 MB
 - 10-year allowance: 500 MB
 - **Result: 500 MB is tight for 10 years**, but:
@@ -1383,52 +1403,57 @@ graph LR
 
 ### Hologram
 
-| Feature | Value |
-|---------|-------|
-| **SIM Cost** | $3-5 |
-| **Monthly Fee** | $1 (can pause when not in use) |
-| **Data Cost** | $0.03/MB |
-| **Your Monthly Cost** | ~$1.26/month (42 MB × $0.03) |
-| **Annual Cost** | ~$27/year per sensor |
-| **Coverage** | 190+ countries, multiple carriers per region |
+| Feature               | Value                                        |
+| --------------------- | -------------------------------------------- |
+| **SIM Cost**          | $3-5                                         |
+| **Monthly Fee**       | $1 (can pause when not in use)               |
+| **Data Cost**         | $0.03/MB                                     |
+| **Your Monthly Cost** | ~$1.26/month (42 MB × $0.03)                 |
+| **Annual Cost**       | ~$27/year per sensor                         |
+| **Coverage**          | 190+ countries, multiple carriers per region |
 
 **Pros:**
+
 - Most flexible - pay only for what you use
 - Can pause SIM when not needed
 - Excellent dashboard and API
 
 **Cons:**
+
 - Higher per-MB cost adds up for regular uploads
 
 ### Soracom
 
-| Feature | Value |
-|---------|-------|
-| **SIM Cost** | $5 |
+| Feature          | Value                                |
+| ---------------- | ------------------------------------ |
+| **SIM Cost**     | $5                                   |
 | **Plan Options** | plan-D ($0.002/KB), plan-US ($2/1GB) |
-| **Coverage** | US: AT&T, T-Mobile, Verizon |
-| **Best Price** | plan-US: $2/GB |
+| **Coverage**     | US: AT&T, T-Mobile, Verizon          |
+| **Best Price**   | plan-US: $2/GB                       |
 
 **Your monthly cost with plan-US:**
+
 - 42 MB/month = $0.08/month
 - Annual: ~$1/year per sensor
 
 **Pros:**
+
 - Cheapest for higher volumes
 - Strong US coverage (3 carriers)
 - Japanese company with excellent IoT focus
 
 **Cons:**
+
 - US-focused (limited global coverage)
 - More complex pricing tiers
 
 ### Cost Comparison for Your Use Case (42 MB/month)
 
-| Provider | Year 1 | Year 5 | Year 10 |
-|----------|--------|--------|---------|
-| **1NCE** | **$10** | **$10** | **$10** |
-| Hologram | $27 | $135 | $270 |
-| Soracom (plan-US) | $7 | $11 | $16 |
+| Provider          | Year 1  | Year 5  | Year 10 |
+| ----------------- | ------- | ------- | ------- |
+| **1NCE**          | **$10** | **$10** | **$10** |
+| Hologram          | $27     | $135    | $270    |
+| Soracom (plan-US) | $7      | $11     | $16     |
 
 ### Recommendation
 
@@ -1450,6 +1475,7 @@ flowchart TD
 ```
 
 **For opensensor.space sensors:**
+
 - **Primary recommendation: 1NCE** - $10 total for 10 years, perfect for low-bandwidth sensor data
 - **Alternative (US): Soracom** - Best rates for US deployments
 - **Flexible option: Hologram** - Best if usage varies or you need to pause SIMs
@@ -1458,14 +1484,14 @@ flowchart TD
 
 For cellular connectivity, you'll need an ESP32 paired with an LTE-M/NB-IoT modem:
 
-| Module | Description | Price Range |
-|--------|-------------|-------------|
-| **LILYGO T-SIM7600G** | ESP32-S3 + SIM7600 (4G LTE) | ~$40-50 |
-| **LILYGO T-A7670** | ESP32 + A7670 (4G LTE-Cat 1) | ~$25-35 |
-| **Waveshare SIM7080G** | Add-on for any ESP32 (LTE-M/NB-IoT) | ~$20-30 |
+| Module                 | Description                         | Price Range |
+| ---------------------- | ----------------------------------- | ----------- |
+| **LILYGO T-SIM7600G**  | ESP32-S3 + SIM7600 (4G LTE)         | ~$40-50     |
+| **LILYGO T-A7670**     | ESP32 + A7670 (4G LTE-Cat 1)        | ~$25-35     |
+| **Waveshare SIM7080G** | Add-on for any ESP32 (LTE-M/NB-IoT) | ~$20-30     |
 
 These modules support the LTE-M/NB-IoT bands used by 1NCE, Hologram, and Soracom.
 
 ---
 
-*Last Updated: December 4, 2024 - POC Validated!*
+_Last Updated: December 4, 2025 - POC Validated!_
