@@ -139,14 +139,20 @@ jobs:
       - name: Build project (debug)
         run: |
           # Source the export script to set up environment (PATH, IDF_PATH, etc.)
+          # This is critical - it sets PATH to use ESP toolchain
           source $HOME/export-esp.sh
           # Verify we're using the correct rustc and toolchain
-          echo "Using rustc: $(which rustc)"
+          echo "=== Toolchain Verification ==="
+          echo "RUSTC: $(which rustc)"
+          echo "CARGO: $(which cargo)"
           rustc --version
+          cargo --version
           echo "Active toolchain:"
           rustup show
+          echo "=============================="
           # Build with verbose output
           # Note: ESP toolchain handles build-std automatically for Xtensa targets
+          # The PATH from export-esp.sh should ensure we use ESP toolchain's cargo
           cargo build --target xtensa-esp32s3-espidf --verbose
         continue-on-error: false
 
