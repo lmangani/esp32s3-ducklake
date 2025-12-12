@@ -1,14 +1,14 @@
-//! ESP32-S3 DuckDB DuckLake + S3 Experiment
+//! ESP32-C6 DuckDB DuckLake + S3 Experiment
 //!
 //! This experimental code for opensensor.space demonstrates:
-//! 1. Using DuckDB with DuckLake extension on ESP32-S3
+//! 1. Using DuckDB with DuckLake extension on ESP32-C6 (RISC-V)
 //! 2. Writing sensor data to DuckLake tables stored on S3
 //! 3. Testing with 3 sample sensor data batches
 //!
 //! IMPORTANT: Replace AWS credentials and WiFi settings before flashing!
 //!
-//! NOTE: DuckDB may have higher memory/binary size requirements than raw Parquet.
-//! This is an experimental migration from the Parquet-only approach.
+//! NOTE: ESP32-C6 uses RISC-V architecture which has better compatibility
+//! with DuckDB/Arrow compared to Xtensa-based ESP32 chips.
 
 use std::time::Duration;
 
@@ -53,7 +53,7 @@ fn main() -> Result<()> {
     esp_idf_svc::log::EspLogger::initialize_default();
 
     info!("================================================");
-    info!("ESP32-S3 DuckDB DuckLake + S3 Experiment");
+    info!("ESP32-C6 DuckDB DuckLake + S3 Experiment");
     info!("For opensensor.space");
     info!("================================================");
 

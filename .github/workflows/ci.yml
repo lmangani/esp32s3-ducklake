@@ -10,11 +10,11 @@ on:
 env:
   CARGO_TERM_COLOR: always
   ESP_IDF_VERSION: v5.3.2
-  MCU: esp32s3
+  MCU: esp32c6
 
 jobs:
   build:
-    name: Build ESP32-S3 Project
+    name: Build ESP32-C6 Project
     runs-on: ubuntu-latest
     timeout-minutes: 30
 
@@ -46,8 +46,9 @@ jobs:
 
       - name: Set up ESP Rust toolchain
         run: |
-          # espup uses short target names (esp32s3), not full rustc target names
-          espup install --targets esp32s3
+          # espup uses short target names (esp32c6), not full rustc target names
+          # ESP32-C6 uses RISC-V architecture (better compatibility with DuckDB/Arrow)
+          espup install --targets esp32c6
           # Source the export script to get environment variables
           source $HOME/export-esp.sh
           # Verify the ESP toolchain is set up
@@ -91,8 +92,8 @@ jobs:
         with:
           path: |
             ~/.espressif/
-            ~/.cargo/xtensa-esp32s3-espidf/
-            ~/.rustup/toolchains/*/lib/rustlib/xtensa-esp32s3-espidf/
+            ~/.cargo/riscv32imc-esp-espidf/
+            ~/.rustup/toolchains/*/lib/rustlib/riscv32imc-esp-espidf/
           key: ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}-
@@ -109,7 +110,7 @@ jobs:
           espup --version || echo "espup version check failed"
           # Try to verify target (ESP toolchain may not support standard rustup commands)
           echo "Verifying ESP toolchain setup..."
-          rustc --print target-list 2>/dev/null | grep xtensa-esp32s3-espidf || echo "Target verification (ESP toolchain uses custom setup)"
+          rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf || echo "Target verification (ESP toolchain uses custom setup)"
 
       - name: Build project (debug)
         run: |
@@ -119,7 +120,7 @@ jobs:
           rustc --version
           # Build with verbose output
           # Note: ESP toolchain handles the target automatically
-          cargo build --target xtensa-esp32s3-espidf --verbose
+          cargo build --target riscv32imc-esp-espidf --verbose
         continue-on-error: false
 
       - name: Build project (release)
@@ -130,15 +131,15 @@ jobs:
           rustc --version
           # Build with verbose output
           # Note: ESP toolchain handles the target automatically
-          cargo build --release --target xtensa-esp32s3-espidf --verbose
+          cargo build --release --target riscv32imc-esp-espidf --verbose
         continue-on-error: false
 
       - name: Verify binary format
         run: |
           source $HOME/export-esp.sh || true
-          if [ -f "target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test" ]; then
-            file target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test
-            readelf -h target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test 2>/dev/null | head -20 || echo "readelf not available, skipping"
+          if [ -f "target/riscv32imc-esp-espidf/release/esp32s3-parquet-test" ]; then
+            file target/riscv32imc-esp-espidf/release/esp32s3-parquet-test
+            readelf -h target/riscv32imc-esp-espidf/release/esp32s3-parquet-test 2>/dev/null | head -20 || echo "readelf not available, skipping"
             echo "✅ Binary format verified"
           else
             echo "❌ Release binary not found"
@@ -147,7 +148,7 @@ jobs:
 
       - name: Check binary size
         run: |
-          BINARY_SIZE=$(stat -c%s target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test 2>/dev/null || echo "0")
+          BINARY_SIZE=$(stat -c%s target/riscv32imc-esp-espidf/release/esp32s3-parquet-test 2>/dev/null || echo "0")
           echo "Binary size: $BINARY_SIZE bytes ($(echo "scale=2; $BINARY_SIZE/1024" | bc) KB)"
           echo "binary_size=$BINARY_SIZE" >> $GITHUB_ENV
           
@@ -166,7 +167,7 @@ jobs:
         run: |
           source $HOME/export-esp.sh || true
           mkdir -p qemu_images
-          if [ -f "target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test" ]; then
+          if [ -f "target/riscv32imc-esp-espidf/release/esp32s3-parquet-test" ]; then
             # Try to use esptool if available in PATH, otherwise use pip version
             if command -v esptool.py &> /dev/null; then
               ESPTOOL=esptool.py
@@ -178,13 +179,13 @@ jobs:
             fi
             
             if [ -n "$ESPTOOL" ]; then
-              $ESPTOOL --chip esp32s3 \
+              $ESPTOOL --chip esp32c6 \
                 elf2image \
                 --flash_mode dio \
                 --flash_freq 80m \
-                --flash_size 16MB \
-                -o qemu_images/esp32s3-parquet-test.bin \
-                target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test || \
+                --flash_size 4MB \
+                -o qemu_images/esp32c6-parquet-test.bin \
+                target/riscv32imc-esp-espidf/release/esp32s3-parquet-test || \
               echo "⚠️ esptool conversion failed, continuing with ELF binary"
             fi
           fi
@@ -193,16 +194,16 @@ jobs:
         uses: actions/upload-artifact@v4
         if: success()
         with:
-          name: esp32s3-binary
+          name: esp32c6-binary
           path: |
-            target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test
-            target/xtensa-esp32s3-espidf/debug/esp32s3-parquet-test
+            target/riscv32imc-esp-espidf/release/esp32s3-parquet-test
+            target/riscv32imc-esp-espidf/debug/esp32s3-parquet-test
             qemu_images/*.bin
           retention-days: 7
           compression-level: 6
 
   qemu-test:
-    name: QEMU Simulation Test
+    name: QEMU Simulation Test (ESP32-C6)
     runs-on: ubuntu-latest
     needs: build
     timeout-minutes: 15
@@ -214,7 +215,7 @@ jobs:
       - name: Download build artifacts
         uses: actions/download-artifact@v4
         with:
-          name: esp32s3-binary
+          name: esp32c6-binary
           path: ./
 
       - name: Install ESP-IDF and QEMU dependencies
@@ -247,25 +248,25 @@ jobs:
           . ./export.sh
           echo "IDF_PATH=$IDF_PATH" >> $GITHUB_ENV
 
-      - name: Install QEMU for ESP32-S3
+      - name: Install QEMU for ESP32-C6
         run: |
-          # Check if QEMU supports ESP32-S3
-          # Note: ESP32-S3 QEMU support is experimental
-          sudo apt-get install -y qemu-system-xtensa qemu-utils
-          qemu-system-xtensa --version || echo "QEMU installed but ESP32-S3 support may be limited"
+          # ESP32-C6 uses RISC-V, which has better QEMU support
+          sudo apt-get update
+          sudo apt-get install -y qemu-system-riscv32 qemu-utils
+          qemu-system-riscv32 --version || echo "QEMU RISC-V support check"
 
       - name: Validate binary structure
         run: |
-          if [ -f "qemu_images/esp32s3-parquet-test.bin" ]; then
-            BIN_SIZE=$(stat -c%s qemu_images/esp32s3-parquet-test.bin)
+          if [ -f "qemu_images/esp32c6-parquet-test.bin" ]; then
+            BIN_SIZE=$(stat -c%s qemu_images/esp32c6-parquet-test.bin)
             echo "Binary size: $BIN_SIZE bytes"
             
             # Check if binary has valid ESP32 header
-            hexdump -C qemu_images/esp32s3-parquet-test.bin | head -5
+            hexdump -C qemu_images/esp32c6-parquet-test.bin | head -5
             echo "✅ Binary structure validated"
-          elif [ -f "target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test" ]; then
+          elif [ -f "target/riscv32imc-esp-espidf/release/esp32s3-parquet-test" ]; then
             echo "⚠️ Using ELF binary (conversion may have failed)"
-            file target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test
+            file target/riscv32imc-esp-espidf/release/esp32s3-parquet-test
           else
             echo "❌ No binary found"
             exit 1
@@ -273,16 +274,16 @@ jobs:
 
       - name: Run QEMU simulation (if supported)
         run: |
-          echo "⚠️ Note: ESP32-S3 QEMU support is experimental"
+          echo "ESP32-C6 uses RISC-V architecture with better QEMU support"
           echo "This step validates binary format and structure"
-          echo "For full hardware testing, flash to actual ESP32-S3 hardware"
+          echo "For full hardware testing, flash to actual ESP32-C6 hardware"
           
           # Check for binary files
-          if [ -f "qemu_images/esp32s3-parquet-test.bin" ]; then
-            BIN_FILE="qemu_images/esp32s3-parquet-test.bin"
+          if [ -f "qemu_images/esp32c6-parquet-test.bin" ]; then
+            BIN_FILE="qemu_images/esp32c6-parquet-test.bin"
             echo "✅ Using flashable binary: $BIN_FILE"
-          elif [ -f "target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test" ]; then
-            BIN_FILE="target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test"
+          elif [ -f "target/riscv32imc-esp-espidf/release/esp32s3-parquet-test" ]; then
+            BIN_FILE="target/riscv32imc-esp-espidf/release/esp32s3-parquet-test"
             echo "⚠️ Using ELF binary: $BIN_FILE"
           else
             echo "❌ No binary found for QEMU"
@@ -297,11 +298,8 @@ jobs:
           echo "✅ Binary ready for QEMU simulation"
           echo "Binary location: $BIN_FILE"
           echo ""
-          echo "Note: Full QEMU execution requires ESP32-S3 QEMU support"
-          echo "For now, this validates the binary was built correctly"
-          echo ""
           echo "To test on hardware:"
-          echo "  espflash flash --monitor target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test"
+          echo "  espflash flash --monitor target/riscv32imc-esp-espidf/release/esp32s3-parquet-test"
         continue-on-error: true
 
   lint:
