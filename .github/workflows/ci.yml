@@ -46,7 +46,8 @@ jobs:
 
       - name: Set up ESP Rust toolchain
         run: |
-          espup install --targets xtensa-esp32s3-espidf
+          # espup uses short target names (esp32s3), not full rustc target names
+          espup install --targets esp32s3
           # Source the export script to get environment variables
           source $HOME/export-esp.sh
           # Export key variables to GITHUB_ENV for subsequent steps
