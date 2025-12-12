@@ -1,4 +1,4 @@
-name: ESP32-S3 CI with QEMU
+name: ESP32-C6 CI with QEMU
 
 on:
   push:
@@ -11,6 +11,8 @@ env:
   CARGO_TERM_COLOR: always
   ESP_IDF_VERSION: v5.3.2
   MCU: esp32c6
+  # Enable incremental compilation for faster rebuilds
+  CARGO_INCREMENTAL: 1
 
 jobs:
   build:
@@ -28,13 +30,15 @@ jobs:
           toolchain: stable
           override: true
 
-      - name: Cache cargo bin
+      - name: Cache cargo bin (espup, etc.)
         uses: actions/cache@v4
         with:
           path: ~/.cargo/bin
           key: ${{ runner.os }}-cargo-bin-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
             ${{ runner.os }}-cargo-bin-
+          # Cache for 7 days
+          fail-on-cache-miss: false
 
       - name: Install espup
         run: |
@@ -83,9 +87,20 @@ jobs:
             ~/.cargo/registry/index/
             ~/.cargo/registry/cache/
             ~/.cargo/git/db/
-          key: ${{ runner.os }}-cargo-${{ hashFiles('**/Cargo.lock') }}
+          key: ${{ runner.os }}-cargo-registry-${{ hashFiles('**/Cargo.lock') }}
           restore-keys: |
-            ${{ runner.os }}-cargo-
+            ${{ runner.os }}-cargo-registry-
+
+      - name: Cache cargo build artifacts
+        uses: actions/cache@v4
+        with:
+          path: |
+            target/
+          key: ${{ runner.os }}-cargo-build-${{ env.MCU }}-${{ hashFiles('**/Cargo.lock') }}-${{ hashFiles('**/*.rs', '**/Cargo.toml') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-build-${{ env.MCU }}-${{ hashFiles('**/Cargo.lock') }}-
+            ${{ runner.os }}-cargo-build-${{ env.MCU }}-
+            ${{ runner.os }}-cargo-build-
 
       - name: Cache ESP-IDF and toolchain
         uses: actions/cache@v4
@@ -94,8 +109,10 @@ jobs:
             ~/.espressif/
             ~/.cargo/riscv32imc-esp-espidf/
             ~/.rustup/toolchains/*/lib/rustlib/riscv32imc-esp-espidf/
-          key: ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}-${{ hashFiles('Cargo.lock') }}
+            ~/.espup/
+          key: ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}-${{ env.MCU }}-v2
           restore-keys: |
+            ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}-${{ env.MCU }}-
             ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}-
             ${{ runner.os }}-esp-idf-
 
