@@ -67,17 +67,19 @@ jobs:
           rustup default esp || echo "ESP toolchain may already be default"
           # Verify rustc is from ESP toolchain
           RUSTC_PATH=$(which rustc)
-          if [[ "$RUSTC_PATH" == *"esp"* ]] || [[ "$RUSTC_PATH" == *".cargo"* ]]; then
-            echo "✅ Using ESP toolchain rustc: $RUSTC_PATH"
-          else
-            echo "⚠️ Warning: rustc path doesn't look like ESP toolchain: $RUSTC_PATH"
-          fi
+          echo "Rustc path: $RUSTC_PATH"
+          # Verify the target is available in the ESP toolchain
+          echo "Checking for RISC-V target in ESP toolchain..."
+          rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf || echo "Target check (ESP toolchain may handle this differently)"
           # Export key variables to GITHUB_ENV for subsequent steps
+          # CRITICAL: Export the full PATH so subsequent steps use ESP toolchain
           echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
           echo "IDF_PATH=$IDF_PATH" >> $GITHUB_ENV
           echo "PATH=$PATH" >> $GITHUB_ENV
           # Ensure RUSTC points to the ESP toolchain
           echo "RUSTC=$(which rustc)" >> $GITHUB_ENV
+          # Also set RUSTUP_TOOLCHAIN to ensure ESP toolchain is used
+          echo "RUSTUP_TOOLCHAIN=esp" >> $GITHUB_ENV
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -122,7 +124,10 @@ jobs:
           # Verify ESP-IDF is set up correctly
           echo "IDF_PATH: ${IDF_PATH:-not set}"
           echo "RUSTC: $(which rustc)"
+          echo "RUSTUP_TOOLCHAIN: ${RUSTUP_TOOLCHAIN:-not set}"
           rustc --version
+          # Verify we're using the ESP toolchain
+          rustup show
           # Verify espup installation
           espup --version || echo "espup version check failed"
           # Try to verify target (ESP toolchain may not support standard rustup commands)
@@ -132,24 +137,36 @@ jobs:
       - name: Build project (debug)
         run: |
           source $HOME/export-esp.sh
-          # Verify we're using the correct rustc
+          # Verify we're using the correct rustc and toolchain
           echo "Using rustc: $(which rustc)"
+          echo "RUSTUP_TOOLCHAIN: ${RUSTUP_TOOLCHAIN:-not set}"
           rustc --version
+          rustup show
+          # Ensure ESP toolchain is active
+          export RUSTUP_TOOLCHAIN=esp
           # Build with verbose output
           # Note: ESP toolchain handles the target automatically
           cargo build --target riscv32imc-esp-espidf --verbose
         continue-on-error: false
+        env:
+          RUSTUP_TOOLCHAIN: esp
 
       - name: Build project (release)
         run: |
           source $HOME/export-esp.sh
-          # Verify we're using the correct rustc
+          # Verify we're using the correct rustc and toolchain
           echo "Using rustc: $(which rustc)"
+          echo "RUSTUP_TOOLCHAIN: ${RUSTUP_TOOLCHAIN:-not set}"
           rustc --version
+          rustup show
+          # Ensure ESP toolchain is active
+          export RUSTUP_TOOLCHAIN=esp
           # Build with verbose output
           # Note: ESP toolchain handles the target automatically
           cargo build --release --target riscv32imc-esp-espidf --verbose
         continue-on-error: false
+        env:
+          RUSTUP_TOOLCHAIN: esp
 
       - name: Verify binary format
         run: |
