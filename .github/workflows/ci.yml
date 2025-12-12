@@ -50,10 +50,31 @@ jobs:
           espup install --targets esp32s3
           # Source the export script to get environment variables
           source $HOME/export-esp.sh
+          # Verify the ESP toolchain is set up
+          echo "Checking Rust toolchain..."
+          rustc --version
+          which rustc
+          # List all toolchains to see what's available
+          echo "Available toolchains:"
+          rustup toolchain list
+          # Set the ESP toolchain as default (espup should install it)
+          # The toolchain name should be something like 'esp' or 'nightly-esp'
+          ESP_TOOLCHAIN=$(rustup toolchain list | grep -E '(esp|xtensa)' | head -1 | awk '{print $1}' || echo "")
+          if [ -n "$ESP_TOOLCHAIN" ]; then
+            echo "Setting ESP toolchain as default: $ESP_TOOLCHAIN"
+            rustup default $ESP_TOOLCHAIN
+          else
+            echo "Warning: Could not find ESP toolchain, using default"
+          fi
+          # Verify the target is available
+          echo "Checking installed targets..."
+          rustup target list --installed
           # Export key variables to GITHUB_ENV for subsequent steps
           echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
           echo "IDF_PATH=$IDF_PATH" >> $GITHUB_ENV
           echo "PATH=$PATH" >> $GITHUB_ENV
+          # Ensure RUSTC points to the ESP toolchain
+          echo "RUSTC=$(which rustc)" >> $GITHUB_ENV
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -95,12 +116,22 @@ jobs:
       - name: Build project (debug)
         run: |
           source $HOME/export-esp.sh
+          # Verify we're using the correct rustc
+          echo "Using rustc: $(which rustc)"
+          rustc --version
+          # Verify target is available
+          rustup target list --installed | grep xtensa-esp32s3-espidf || echo "Warning: Target not in installed list"
+          # Build with verbose output
           cargo build --target xtensa-esp32s3-espidf --verbose
         continue-on-error: false
 
       - name: Build project (release)
         run: |
           source $HOME/export-esp.sh
+          # Verify we're using the correct rustc
+          echo "Using rustc: $(which rustc)"
+          rustc --version
+          # Build with verbose output
           cargo build --release --target xtensa-esp32s3-espidf --verbose
         continue-on-error: false
 
