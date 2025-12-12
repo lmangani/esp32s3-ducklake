@@ -1,0 +1,13 @@
+diff --git a/vendor/arrow-rs/arrow-buffer/src/alloc/alignment.rs b/vendor/arrow-rs/arrow-buffer/src/alloc/alignment.rs
+index 1234567..abcdefg 100644
+--- a/vendor/arrow-rs/arrow-buffer/src/alloc/alignment.rs
++++ b/vendor/arrow-rs/arrow-buffer/src/alloc/alignment.rs
+@@ -109,3 +109,9 @@ pub const ALIGNMENT: usize = 1 << 6;
+ #[cfg(target_arch = "loongarch64")]
+ pub const ALIGNMENT: usize = 1 << 6;
+ 
++// ESP32-S3 uses Xtensa architecture
++// Cache line size is typically 32 bytes for Xtensa
++/// Cache and allocation multiple alignment size
++#[cfg(target_arch = "xtensa")]
++pub const ALIGNMENT: usize = 1 << 5;

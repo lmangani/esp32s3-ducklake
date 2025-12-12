@@ -144,6 +144,10 @@ jobs:
           echo "Verifying ESP toolchain setup..."
           rustc --print target-list 2>/dev/null | grep xtensa-esp32s3-espidf || echo "Target verification (ESP toolchain uses custom setup)"
 
+      - name: Apply arrow-buffer Xtensa patch
+        run: |
+          ./scripts/apply-arrow-patch.sh
+
       - name: Build project (debug)
         run: |
           # Source the export script to set up environment (PATH, IDF_PATH, etc.)
