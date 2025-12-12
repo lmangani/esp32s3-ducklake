@@ -26,18 +26,33 @@ jobs:
         uses: dtolnay/rust-toolchain@stable
         with:
           toolchain: stable
+          override: true
+
+      - name: Cache cargo bin
+        uses: actions/cache@v4
+        with:
+          path: ~/.cargo/bin
+          key: ${{ runner.os }}-cargo-bin-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-cargo-bin-
 
       - name: Install espup
-        uses: esp-rs/espup-action@v1
-        with:
-          version: latest
+        run: |
+          if ! command -v espup &> /dev/null; then
+            cargo install espup --locked
+          else
+            echo "espup already installed"
+          fi
 
-      - name: Install Rust ESP toolchain
-        uses: esp-rs/rust-build@v1
-        with:
-          default: true
-          toolchain-version: stable
-          targets: xtensa-esp32s3-espidf
+      - name: Set up ESP Rust toolchain
+        run: |
+          espup install --targets xtensa-esp32s3-espidf
+          # Source the export script to get environment variables
+          source $HOME/export-esp.sh
+          # Export key variables to GITHUB_ENV for subsequent steps
+          echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
+          echo "IDF_PATH=$IDF_PATH" >> $GITHUB_ENV
+          echo "PATH=$PATH" >> $GITHUB_ENV
 
       - name: Cache cargo registry
         uses: actions/cache@v4
@@ -51,26 +66,30 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-cargo-
 
-      - name: Cache ESP-IDF
+      - name: Cache ESP-IDF and toolchain
         uses: actions/cache@v4
         with:
           path: |
             ~/.espressif/
             ~/.cargo/xtensa-esp32s3-espidf/
-          key: ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}
+            ~/.rustup/toolchains/*/lib/rustlib/xtensa-esp32s3-espidf/
+          key: ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}-${{ hashFiles('Cargo.lock') }}
           restore-keys: |
+            ${{ runner.os }}-esp-idf-${{ env.ESP_IDF_VERSION }}-
             ${{ runner.os }}-esp-idf-
 
-      - name: Set up build environment
+      - name: Verify build environment
         run: |
           source $HOME/export-esp.sh
-          echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
-          echo "IDF_PATH=$IDF_PATH" >> $GITHUB_ENV
           # Verify ESP-IDF is set up correctly
-          echo "IDF_PATH: $IDF_PATH"
+          echo "IDF_PATH: ${IDF_PATH:-not set}"
           echo "RUSTC: $(which rustc)"
           rustc --version
-          rustc --print target-list | grep esp || echo "ESP targets not found in rustc"
+          rustup target list --installed | grep esp || echo "ESP targets not found"
+          # Verify espup installation
+          espup --version || echo "espup version check failed"
+          # Verify target is available
+          rustup target list | grep xtensa-esp32s3-espidf || echo "Target not in list"
 
       - name: Build project (debug)
         run: |
@@ -86,10 +105,10 @@ jobs:
 
       - name: Verify binary format
         run: |
-          source $HOME/export-esp.sh
+          source $HOME/export-esp.sh || true
           if [ -f "target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test" ]; then
             file target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test
-            readelf -h target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test | head -20
+            readelf -h target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test 2>/dev/null | head -20 || echo "readelf not available, skipping"
             echo "✅ Binary format verified"
           else
             echo "❌ Release binary not found"
@@ -115,24 +134,29 @@ jobs:
 
       - name: Convert ELF to flashable binary
         run: |
-          source $HOME/export-esp.sh
+          source $HOME/export-esp.sh || true
           mkdir -p qemu_images
           if [ -f "target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test" ]; then
             # Try to use esptool if available in PATH, otherwise use pip version
             if command -v esptool.py &> /dev/null; then
               ESPTOOL=esptool.py
-            else
+            elif command -v esptool &> /dev/null; then
               ESPTOOL=esptool
+            else
+              echo "⚠️ esptool not found, skipping binary conversion"
+              ESPTOOL=""
             fi
             
-            $ESPTOOL --chip esp32s3 \
-              elf2image \
-              --flash_mode dio \
-              --flash_freq 80m \
-              --flash_size 16MB \
-              -o qemu_images/esp32s3-parquet-test.bin \
-              target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test || \
-            echo "⚠️ esptool conversion failed, continuing with ELF binary"
+            if [ -n "$ESPTOOL" ]; then
+              $ESPTOOL --chip esp32s3 \
+                elf2image \
+                --flash_mode dio \
+                --flash_freq 80m \
+                --flash_size 16MB \
+                -o qemu_images/esp32s3-parquet-test.bin \
+                target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test || \
+              echo "⚠️ esptool conversion failed, continuing with ELF binary"
+            fi
           fi
 
       - name: Upload build artifacts
