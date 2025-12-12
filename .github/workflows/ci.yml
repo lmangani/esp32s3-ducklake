@@ -137,14 +137,20 @@ jobs:
           ./scripts/apply-arrow-patch.sh
 
       - name: Build project (debug)
+        env:
+          # Use the ESP toolchain's rustc and cargo from GITHUB_ENV
+          RUSTC: ${{ env.RUSTC }}
+          CARGO: ${{ env.CARGO }}
         run: |
           # Source the export script to set up environment (PATH, IDF_PATH, etc.)
           # This is critical - it sets PATH to use ESP toolchain
           source $HOME/export-esp.sh
           # Verify we're using the correct rustc and toolchain
           echo "=== Toolchain Verification ==="
-          echo "RUSTC: $(which rustc)"
-          echo "CARGO: $(which cargo)"
+          echo "RUSTC env: ${RUSTC:-not set}"
+          echo "CARGO env: ${CARGO:-not set}"
+          echo "RUSTC path: $(which rustc)"
+          echo "CARGO path: $(which cargo)"
           rustc --version
           cargo --version
           echo "Active toolchain:"
@@ -152,18 +158,24 @@ jobs:
           echo "=============================="
           # Build with verbose output
           # Note: ESP toolchain handles build-std automatically for Xtensa targets
-          # The PATH from export-esp.sh should ensure we use ESP toolchain's cargo
-          cargo build --target xtensa-esp32s3-espidf --verbose
+          # Use explicit RUSTC and CARGO env vars to ensure ESP toolchain is used
+          ${CARGO:-cargo} build --target xtensa-esp32s3-espidf --verbose
         continue-on-error: false
 
       - name: Build project (release)
+        env:
+          # Use the ESP toolchain's rustc and cargo from GITHUB_ENV
+          RUSTC: ${{ env.RUSTC }}
+          CARGO: ${{ env.CARGO }}
         run: |
           # Source the export script to set up environment (PATH, IDF_PATH, etc.)
           source $HOME/export-esp.sh
           # Verify we're using the correct rustc and toolchain
           echo "=== Toolchain Verification ==="
-          echo "RUSTC: $(which rustc)"
-          echo "CARGO: $(which cargo)"
+          echo "RUSTC env: ${RUSTC:-not set}"
+          echo "CARGO env: ${CARGO:-not set}"
+          echo "RUSTC path: $(which rustc)"
+          echo "CARGO path: $(which cargo)"
           rustc --version
           cargo --version
           echo "Active toolchain:"
@@ -171,7 +183,8 @@ jobs:
           echo "=============================="
           # Build with verbose output
           # Note: ESP toolchain handles build-std automatically for Xtensa targets
-          cargo build --release --target xtensa-esp32s3-espidf --verbose
+          # Use explicit RUSTC and CARGO env vars to ensure ESP toolchain is used
+          ${CARGO:-cargo} build --release --target xtensa-esp32s3-espidf --verbose
         continue-on-error: false
 
       - name: Verify binary format
