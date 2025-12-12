@@ -153,10 +153,13 @@ jobs:
           # CRITICAL: Ensure ESP toolchain's bin is FIRST in PATH
           # This ensures cargo uses the ESP toolchain's rustc
           ESP_CARGO_BIN=$(dirname $(which cargo))
+          ESP_RUSTC=$(which rustc)
           export PATH="$ESP_CARGO_BIN:$PATH"
+          export RUSTC="$ESP_RUSTC"
           
           # Verify we're using the correct rustc and toolchain
           echo "=== Toolchain Verification ==="
+          echo "RUSTC env: $RUSTC"
           echo "RUSTC path: $(which rustc)"
           echo "CARGO path: $(which cargo)"
           rustc --version
