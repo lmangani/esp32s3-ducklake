@@ -30,6 +30,13 @@ jobs:
           toolchain: nightly
           override: true
           components: rust-src
+          
+      - name: Verify nightly toolchain
+        run: |
+          rustc --version
+          rustup show
+          # Ensure nightly is the default
+          rustup default nightly
 
       - name: Cache cargo bin (espup, etc.)
         uses: actions/cache@v4
