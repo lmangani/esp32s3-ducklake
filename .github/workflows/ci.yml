@@ -57,18 +57,16 @@ jobs:
           # List all toolchains to see what's available
           echo "Available toolchains:"
           rustup toolchain list
-          # Set the ESP toolchain as default (espup should install it)
-          # The toolchain name should be something like 'esp' or 'nightly-esp'
-          ESP_TOOLCHAIN=$(rustup toolchain list | grep -E '(esp|xtensa)' | head -1 | awk '{print $1}' || echo "")
-          if [ -n "$ESP_TOOLCHAIN" ]; then
-            echo "Setting ESP toolchain as default: $ESP_TOOLCHAIN"
-            rustup default $ESP_TOOLCHAIN
+          # Set the ESP toolchain as default (espup installs it as 'esp')
+          echo "Setting ESP toolchain as default..."
+          rustup default esp || echo "ESP toolchain may already be default"
+          # Verify rustc is from ESP toolchain
+          RUSTC_PATH=$(which rustc)
+          if [[ "$RUSTC_PATH" == *"esp"* ]] || [[ "$RUSTC_PATH" == *".cargo"* ]]; then
+            echo "✅ Using ESP toolchain rustc: $RUSTC_PATH"
           else
-            echo "Warning: Could not find ESP toolchain, using default"
+            echo "⚠️ Warning: rustc path doesn't look like ESP toolchain: $RUSTC_PATH"
           fi
-          # Verify the target is available
-          echo "Checking installed targets..."
-          rustup target list --installed
           # Export key variables to GITHUB_ENV for subsequent steps
           echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
           echo "IDF_PATH=$IDF_PATH" >> $GITHUB_ENV
@@ -107,11 +105,11 @@ jobs:
           echo "IDF_PATH: ${IDF_PATH:-not set}"
           echo "RUSTC: $(which rustc)"
           rustc --version
-          rustup target list --installed | grep esp || echo "ESP targets not found"
           # Verify espup installation
           espup --version || echo "espup version check failed"
-          # Verify target is available
-          rustup target list | grep xtensa-esp32s3-espidf || echo "Target not in list"
+          # Try to verify target (ESP toolchain may not support standard rustup commands)
+          echo "Verifying ESP toolchain setup..."
+          rustc --print target-list 2>/dev/null | grep xtensa-esp32s3-espidf || echo "Target verification (ESP toolchain uses custom setup)"
 
       - name: Build project (debug)
         run: |
@@ -119,9 +117,8 @@ jobs:
           # Verify we're using the correct rustc
           echo "Using rustc: $(which rustc)"
           rustc --version
-          # Verify target is available
-          rustup target list --installed | grep xtensa-esp32s3-espidf || echo "Warning: Target not in installed list"
           # Build with verbose output
+          # Note: ESP toolchain handles the target automatically
           cargo build --target xtensa-esp32s3-espidf --verbose
         continue-on-error: false
 
@@ -132,6 +129,7 @@ jobs:
           echo "Using rustc: $(which rustc)"
           rustc --version
           # Build with verbose output
+          # Note: ESP toolchain handles the target automatically
           cargo build --release --target xtensa-esp32s3-espidf --verbose
         continue-on-error: false
 
