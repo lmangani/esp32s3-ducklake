@@ -52,43 +52,33 @@ jobs:
         run: |
           # espup uses short target names (esp32c6), not full rustc target names
           # ESP32-C6 uses RISC-V architecture (better compatibility with DuckDB/Arrow)
+          # Note: For RISC-V ESP32 chips, espup adds targets to the standard toolchain
+          # rather than creating a separate "esp" toolchain
           espup install --targets esp32c6
           # Source the export script to get environment variables
           source $HOME/export-esp.sh
-          # Verify the ESP toolchain is set up
+          # Verify the toolchain is set up
           echo "Checking Rust toolchain..."
           rustc --version
           which rustc
           # List all toolchains to see what's available
           echo "Available toolchains:"
           rustup toolchain list
-          # Verify the 'esp' toolchain exists
-          if rustup toolchain list | grep -q "esp"; then
-            echo "✅ ESP toolchain found"
-            # Set the ESP toolchain as default
-            rustup default esp
-          else
-            echo "❌ ESP toolchain not found after installation"
-            echo "Trying to find toolchain name..."
-            rustup toolchain list
-            exit 1
-          fi
-          # Verify rustc is from ESP toolchain
-          RUSTC_PATH=$(which rustc)
-          echo "Rustc path: $RUSTC_PATH"
-          # Verify the target is available in the ESP toolchain
-          echo "Checking for RISC-V target in ESP toolchain..."
-          rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf || echo "Target check (ESP toolchain may handle this differently)"
+          # For RISC-V, espup adds targets to the stable toolchain, not a separate "esp" toolchain
+          # Verify the RISC-V target is available
+          echo "Checking for RISC-V ESP target..."
+          rustup target list --installed | grep riscv32imc-esp-espidf && echo "✅ RISC-V ESP target found" || echo "⚠️ Target not in installed list (may be handled differently)"
+          # Verify rustc can see the target
+          rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf && echo "✅ Target available to rustc" || echo "⚠️ Target check"
           # Export key variables to GITHUB_ENV for subsequent steps
-          # CRITICAL: Export the full PATH so subsequent steps use ESP toolchain
+          # CRITICAL: Export the full PATH so subsequent steps use correct toolchain
           echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
           echo "IDF_PATH=$IDF_PATH" >> $GITHUB_ENV
           echo "PATH=$PATH" >> $GITHUB_ENV
-          # Ensure RUSTC points to the ESP toolchain
+          # Ensure RUSTC points to the correct toolchain
           echo "RUSTC=$(which rustc)" >> $GITHUB_ENV
           # Store the export script path for sourcing in later steps
           echo "EXPORT_ESP_SCRIPT=$HOME/export-esp.sh" >> $GITHUB_ENV
-          # Don't set RUSTUP_TOOLCHAIN here - let the PATH handle it
 
       - name: Cache cargo registry
         uses: actions/cache@v4
