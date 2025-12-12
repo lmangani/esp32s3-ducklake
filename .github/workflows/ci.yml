@@ -64,12 +64,21 @@ jobs:
           # List all toolchains to see what's available
           echo "Available toolchains:"
           rustup toolchain list
-          # For RISC-V, espup adds targets to the stable toolchain, not a separate "esp" toolchain
-          # Verify the RISC-V target is available
-          echo "Checking for RISC-V ESP target..."
-          rustup target list --installed | grep riscv32imc-esp-espidf && echo "✅ RISC-V ESP target found" || echo "⚠️ Target not in installed list (may be handled differently)"
-          # Verify rustc can see the target
-          rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf && echo "✅ Target available to rustc" || echo "⚠️ Target check"
+          # For ESP-IDF, we need the riscv32imc-esp-espidf target
+          # espup may install bare-metal targets, but we need ESP-IDF target
+          echo "Checking for RISC-V ESP-IDF target..."
+          if rustup target list --installed | grep -q riscv32imc-esp-espidf; then
+            echo "✅ RISC-V ESP-IDF target already installed"
+          else
+            echo "⚠️ Target not found, attempting to add it..."
+            # Try to add the target (may not work if it's not a standard target)
+            rustup target add riscv32imc-esp-espidf 2>&1 || echo "Note: Target may need to be built from source via build-std"
+          fi
+          # List installed targets
+          echo "Installed targets:"
+          rustup target list --installed
+          # Verify rustc can see the target (even if not installed, build-std will handle it)
+          rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf && echo "✅ Target recognized by rustc" || echo "⚠️ Target not in rustc list (will use build-std)"
           # Export key variables to GITHUB_ENV for subsequent steps
           # CRITICAL: Export the full PATH so subsequent steps use correct toolchain
           echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
@@ -143,9 +152,13 @@ jobs:
           rustc --version
           echo "Active toolchain:"
           rustup show
+          # Verify target is recognized
+          echo "Checking target availability..."
+          rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf || echo "Target check"
           # Build with verbose output
-          # Note: ESP toolchain handles the target automatically via PATH
-          cargo build --target riscv32imc-esp-espidf --verbose
+          # Note: build-std in .cargo/config.toml should handle building std from source
+          # We may need to use -Z build-std flag explicitly
+          cargo +stable build -Z build-std=std,panic_abort --target riscv32imc-esp-espidf --verbose
         continue-on-error: false
 
       - name: Build project (release)
@@ -157,9 +170,13 @@ jobs:
           rustc --version
           echo "Active toolchain:"
           rustup show
+          # Verify target is recognized
+          echo "Checking target availability..."
+          rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf || echo "Target check"
           # Build with verbose output
-          # Note: ESP toolchain handles the target automatically via PATH
-          cargo build --release --target riscv32imc-esp-espidf --verbose
+          # Note: build-std in .cargo/config.toml should handle building std from source
+          # We may need to use -Z build-std flag explicitly
+          cargo +stable build -Z build-std=std,panic_abort --release --target riscv32imc-esp-espidf --verbose
         continue-on-error: false
 
       - name: Verify binary format
