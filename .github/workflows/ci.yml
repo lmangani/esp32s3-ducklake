@@ -27,8 +27,9 @@ jobs:
       - name: Install Rust toolchain
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: stable
+          toolchain: nightly
           override: true
+          components: rust-src
 
       - name: Cache cargo bin (espup, etc.)
         uses: actions/cache@v4
@@ -156,9 +157,10 @@ jobs:
           echo "Checking target availability..."
           rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf || echo "Target check"
           # Build with verbose output
-          # Note: build-std in .cargo/config.toml should handle building std from source
-          # We may need to use -Z build-std flag explicitly
-          cargo +stable build -Z build-std=std,panic_abort --target riscv32imc-esp-espidf --verbose
+          # Note: build-std in .cargo/config.toml [unstable] section should enable it
+          # For ESP-IDF targets, we need nightly for build-std feature
+          # Try with nightly toolchain first
+          cargo +nightly build -Z build-std=std,panic_abort --target riscv32imc-esp-espidf --verbose
         continue-on-error: false
 
       - name: Build project (release)
@@ -174,9 +176,10 @@ jobs:
           echo "Checking target availability..."
           rustc --print target-list 2>/dev/null | grep riscv32imc-esp-espidf || echo "Target check"
           # Build with verbose output
-          # Note: build-std in .cargo/config.toml should handle building std from source
-          # We may need to use -Z build-std flag explicitly
-          cargo +stable build -Z build-std=std,panic_abort --release --target riscv32imc-esp-espidf --verbose
+          # Note: build-std in .cargo/config.toml [unstable] section should enable it
+          # For ESP-IDF targets, we need nightly for build-std feature
+          # Try with nightly toolchain first
+          cargo +nightly build -Z build-std=std,panic_abort --release --target riscv32imc-esp-espidf --verbose
         continue-on-error: false
 
       - name: Verify binary format
