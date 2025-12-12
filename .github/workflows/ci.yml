@@ -26,12 +26,11 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install Rust toolchain
+      - name: Install Rust (for espup)
         uses: dtolnay/rust-toolchain@stable
         with:
-          toolchain: nightly
+          toolchain: stable
           override: true
-          components: rust-src
 
       - name: Cache cargo bin (espup, etc.)
         uses: actions/cache@v4
@@ -55,6 +54,7 @@ jobs:
         run: |
           # espup uses short target names (esp32s3), not full rustc target names
           # ESP32-S3 uses Xtensa architecture
+          # For Xtensa, espup creates a custom toolchain with the correct target definitions
           espup install --targets esp32s3
           # Source the export script to get environment variables
           source $HOME/export-esp.sh
@@ -65,21 +65,9 @@ jobs:
           # List all toolchains to see what's available
           echo "Available toolchains:"
           rustup toolchain list
-          # For ESP-IDF, we need the xtensa-esp32s3-espidf target
-          # espup installs the ESP toolchain which includes Xtensa targets
-          echo "Checking for Xtensa ESP-IDF target..."
-          if rustup target list --installed | grep -q xtensa-esp32s3-espidf; then
-            echo "✅ Xtensa ESP-IDF target already installed"
-          else
-            echo "⚠️ Target not found, attempting to add it..."
-            # Try to add the target (may not work if it's not a standard target)
-            rustup target add xtensa-esp32s3-espidf 2>&1 || echo "Note: Target may need to be built from source via build-std"
-          fi
-          # List installed targets
-          echo "Installed targets:"
-          rustup target list --installed
-          # Verify rustc can see the target (even if not installed, build-std will handle it)
-          rustc --print target-list 2>/dev/null | grep xtensa-esp32s3-espidf && echo "✅ Target recognized by rustc" || echo "⚠️ Target not in rustc list (will use build-std)"
+          # Verify we're using the ESP toolchain (should be in PATH from export-esp.sh)
+          echo "RUSTC location: $(which rustc)"
+          echo "RUSTC version: $(rustc --version)"
           # Export key variables to GITHUB_ENV for subsequent steps
           # CRITICAL: Export the full PATH so subsequent steps use correct toolchain
           echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
@@ -158,7 +146,7 @@ jobs:
           echo "Active toolchain:"
           rustup show
           # Build with verbose output
-          # Note: build-std requires nightly toolchain (configured in .cargo/config.toml)
+          # Note: ESP toolchain handles build-std automatically for Xtensa targets
           cargo build --target xtensa-esp32s3-espidf --verbose
         continue-on-error: false
 
