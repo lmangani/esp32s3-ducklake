@@ -68,15 +68,23 @@ jobs:
           # Verify we're using the ESP toolchain (should be in PATH from export-esp.sh)
           echo "RUSTC location: $(which rustc)"
           echo "RUSTC version: $(rustc --version)"
+          echo "CARGO location: $(which cargo)"
+          echo "CARGO version: $(cargo --version)"
+          # Get the ESP toolchain paths
+          ESP_RUSTC=$(which rustc)
+          ESP_CARGO=$(which cargo)
           # Export key variables to GITHUB_ENV for subsequent steps
           # CRITICAL: Export the full PATH so subsequent steps use correct toolchain
           echo "ESP_IDF_VERSION=$ESP_IDF_VERSION" >> $GITHUB_ENV
           echo "IDF_PATH=$IDF_PATH" >> $GITHUB_ENV
           echo "PATH=$PATH" >> $GITHUB_ENV
-          # Ensure RUSTC points to the correct toolchain
-          echo "RUSTC=$(which rustc)" >> $GITHUB_ENV
+          # Explicitly set RUSTC and CARGO to ESP toolchain versions
+          echo "RUSTC=$ESP_RUSTC" >> $GITHUB_ENV
+          echo "CARGO=$ESP_CARGO" >> $GITHUB_ENV
           # Store the export script path for sourcing in later steps
           echo "EXPORT_ESP_SCRIPT=$HOME/export-esp.sh" >> $GITHUB_ENV
+          echo "Exported RUSTC=$ESP_RUSTC"
+          echo "Exported CARGO=$ESP_CARGO"
 
       - name: Cache cargo registry
         uses: actions/cache@v4
