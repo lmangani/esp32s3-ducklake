@@ -30,12 +30,18 @@ anyhow = "1"
 # Embedded service traits
 embedded-svc = "0.28"
 
-# DuckDB Rust client for DuckLake extension
-# Note: DuckDB may have higher memory/binary size requirements than raw Parquet
-duckdb = "1.4"
+# Minimal Parquet - no arrow, with Snappy compression (pure Rust)
+# Using 56.x for latest stable with snap feature
+parquet = { version = "56", default-features = false, features = ["snap"] }
 
 # Sans-IO S3 client - may still be needed for DuckLake S3 operations
 rusty-s3 = "0.8"
 
 [build-dependencies]
 embuild = "0.33"
+
+# Patch arrow-buffer to add Xtensa architecture support
+# The arrow-buffer crate doesn't support Xtensa (ESP32-S3) by default
+# We use a git submodule with a patched version that includes Xtensa support
+[patch.crates-io]
+arrow-buffer = { path = "vendor/arrow-rs/arrow-buffer" }

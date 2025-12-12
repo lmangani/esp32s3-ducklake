@@ -29,3 +29,5 @@ build/
 managed_components/
 dependencies.lock
 .embuild/
+vendor/arrow-rs/.git
+vendor/arrow-rs/.git

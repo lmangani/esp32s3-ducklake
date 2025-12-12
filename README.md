@@ -1,27 +1,26 @@
-# ESP32-S3 DuckDB DuckLake S3 Writer
+# ESP32-S3 Parquet S3 Writer
 
-Experimental proof-of-concept for **opensensor.space** demonstrating how to use DuckDB with DuckLake extension on ESP32-S3 to write sensor data directly to S3.
+Experimental proof-of-concept for **opensensor.space** demonstrating how to create Snappy-compressed Parquet files on ESP32-S3 and upload them to AWS S3 using chunked transfer encoding.
 
 ## Features
 
-- **DuckDB DuckLake**: Uses DuckDB with DuckLake extension for data lake management
-- **S3 Integration**: Automatically writes Parquet files to AWS S3 with DuckLake metadata management
-- **ACID Transactions**: DuckLake provides ACID guarantees and time travel queries
-- **Schema Evolution**: Support for schema changes over time
-- **Automatic Compression**: DuckDB handles Parquet compression automatically
+- **Parquet Files**: Creates Snappy-compressed Parquet files with sensor data
+- **S3 Upload**: Uploads Parquet files to AWS S3 using presigned URLs and chunked transfer
+- **Offline Mode**: Can create Parquet files without network connectivity
 - **Time Sync**: Synchronizes time via SNTP (NTP) for S3 authentication
+- **Xtensa Architecture**: Uses ESP32-S3 (Xtensa) - proven to work with parquet crate
 
 ## Hardware
 
-- **Device**: ESP32-S3 (Required for sufficient PSRAM and memory for DuckDB)
-- **Storage**: Uses DuckDB in-memory database with DuckLake managing S3 storage
-- **Note**: DuckDB may have higher memory/binary size requirements than raw Parquet
+- **Device**: ESP32-S3 (Xtensa architecture)
+- **Storage**: In-memory Parquet file creation, then upload to S3
+- **Note**: Binary size ~997KB (24.73% of 4MB partition)
 
 ## Dependencies
 
-- [`duckdb`](https://crates.io/crates/duckdb): DuckDB Rust client (v1.4+)
+- [`parquet`](https://crates.io/crates/parquet): Parquet file format support (v56.x, with `snap` feature for Snappy compression)
 - [`esp-idf-svc`](https://crates.io/crates/esp-idf-svc): ESP-IDF service wrappers (WiFi, HTTP, SNTP)
-- [`rusty-s3`](https://crates.io/crates/rusty-s3): May still be needed for some S3 operations (kept for compatibility)
+- [`rusty-s3`](https://crates.io/crates/rusty-s3): Sans-IO S3 client for generating presigned URLs
 
 ## Setup & Usage
 
@@ -49,29 +48,44 @@ Experimental proof-of-concept for **opensensor.space** demonstrating how to use 
 
 ## How It Works
 
-1.  Connects to WiFi (required for DuckLake S3 operations).
-2.  Synchronizes time via NTP (crucial for AWS authentication).
-3.  Initializes DuckDB connection and loads DuckLake extension.
-4.  Configures S3 credentials and attaches DuckLake with S3 storage path.
-5.  Creates sensor readings table in DuckLake.
-6.  Inserts sensor data batches (DuckLake automatically writes Parquet files to S3).
-7.  Verifies data with queries.
+1.  Connects to WiFi (optional - can run in offline mode).
+2.  Synchronizes time via NTP (required for AWS S3 authentication).
+3.  Creates Snappy-compressed Parquet files in memory with sensor data.
+4.  Generates presigned S3 URLs using `rusty-s3`.
+5.  Uploads Parquet files to S3 using chunked transfer encoding via `esp-idf-svc` HTTP client.
+6.  Verifies upload success.
 
-## DuckLake Benefits
+## Parquet File Structure
 
-- **ACID Transactions**: Data consistency guarantees
-- **Time Travel**: Query historical snapshots of data
-- **Schema Evolution**: Add/modify columns without breaking existing data
-- **Automatic File Management**: DuckLake handles Parquet file organization on S3
-- **Better Query Capabilities**: Full SQL support vs. raw Parquet files
+Each Parquet file contains:
+- **178 rows** of sensor data (similar to opensensor.space)
+- **10 columns**: timestamp, temperature, humidity, pressure, pm1_0, pm2_5, pm10, gas_resistance, light, noise
+- **Compression**: Snappy (pure Rust implementation)
+- **File size**: ~10-15KB per file
 
 ## Important Notes
 
-⚠️ **Memory Considerations**: DuckDB is a full database engine and may require more memory than the previous Parquet-only approach. Monitor memory usage carefully.
+✅ **Arrow-Buffer Xtensa Support**: The `parquet` crate v56 depends on `arrow-buffer`, which doesn't support Xtensa architecture by default. This project includes a patched version of `arrow-rs` as a git submodule that adds Xtensa support.
 
-⚠️ **Binary Size**: DuckDB binary may be larger than the `parquet` crate. Ensure sufficient flash space.
+**Initial Setup:**
+```bash
+# Clone the repository with submodules
+git clone --recursive <repository-url>
 
-⚠️ **Network Required**: DuckLake requires network connectivity for S3 operations. No offline mode available.
+# Or if you already cloned without --recursive:
+git submodule update --init --recursive
+```
+
+**Submodule Details:**
+- Location: `vendor/arrow-rs/`
+- Patch: Adds Xtensa architecture support to `arrow-buffer/src/alloc/alignment.rs`
+- The patch is automatically applied via `[patch.crates-io]` in `Cargo.toml`
+
+✅ **Memory Efficient**: Uses minimal memory compared to database engines.
+
+✅ **Offline Capable**: Can create Parquet files without network connectivity.
+
+⚠️ **Network Required for Upload**: S3 upload requires WiFi connectivity and time synchronization.
 
 ## CI/CD with GitHub Actions
 
@@ -90,6 +104,7 @@ This project includes a GitHub Actions workflow (`.github/workflows/ci.yml`) tha
 - Binary size warnings (alerts if > 3MB)
 - Artifact uploads for easy binary access
 - Build summary with status of all jobs
+- Short-term caching for Rust builds to save action time
 
 ### Running CI Locally
 
@@ -98,7 +113,7 @@ To test the build process locally:
 ```bash
 # Install ESP toolchain
 cargo install espup
-espup install
+espup install --targets esp32s3
 
 # Source the environment
 source ~/export-esp.sh
@@ -113,3 +128,19 @@ ls -lh target/xtensa-esp32s3-espidf/release/esp32s3-parquet-test
 ### QEMU Testing
 
 ⚠️ **Note**: Full ESP32-S3 QEMU simulation support is experimental. The CI workflow validates binary format and structure, but full QEMU execution may require additional setup. For complete testing, flash to actual ESP32-S3 hardware.
+
+## Why ESP32-S3 (Xtensa)?
+
+ESP32-S3 uses the Xtensa architecture and is the proven working target for this project:
+- ✅ **Proven Compatibility**: The parquet crate works reliably on Xtensa
+- ✅ **8MB PSRAM**: Ample memory for Parquet file creation
+- ✅ **Stable Toolchain**: Well-supported ESP-IDF toolchain
+- ⚠️ **Note**: ESP32-C6 (RISC-V) has compatibility issues with `arrow-buffer` dependency in parquet crate
+
+## Future Enhancements
+
+- Add retry logic with exponential backoff for S3 uploads
+- Implement multipart upload for files > 5MB (unlikely with sensor data)
+- Add Hive-style partitioning: `s3://bucket/station=DEVICE_ID/year=YYYY/month=MM/day=DD/data_HHMM.parquet`
+- Use secure credential storage (NVS encrypted partition)
+- Add compression ratio vs. CPU trade-off analysis
